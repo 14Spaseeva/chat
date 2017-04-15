@@ -14,6 +14,8 @@ public class Server {
     private static int currentClientNum = 0;
     private ServerSocket serverSocket = null;
 
+    private static final Object lock = new Object();
+
     private Server(int port) {
         try {
             serverSocket = new ServerSocket(port);
@@ -21,6 +23,21 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    static void closeSession (Socket socket, String clName) {
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            log.error(" Socket can't be closed ");
+        }
+        synchronized (lock) {
+            currentClientNum--;
+        }
+        log.info(String.format ( "[%s] was stopped", clName));
+
     }
 
     /*
@@ -43,7 +60,7 @@ public class Server {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args)      {
         Server server = new Server (Integer.parseInt( args[0]));
         server.work();
     }
@@ -57,25 +74,29 @@ public class Server {
             new_client.setName(String.format("%s:%s",
                     socket.getInetAddress().getHostAddress(), Integer.toString(socket.getPort())));
             new_client.start();
-
-            currentClientNum++;
+            synchronized (lock) {
+                currentClientNum++;
+            }
             dataOutputStream.writeUTF("Sok");
-            log.info("**[New client] : " + new_client.getName() +"**");
+            log.info("[New client] : " + new_client.getName() +"");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private void rejectClient(DataOutputStream dataOutputStream) throws IOException {
-        dataOutputStream.writeUTF("**U can't connect. Please, try later **");
-        log.warn("**new client is rejected**");
+        dataOutputStream.writeUTF("U can't connect. Please, try later ");
+        log.warn("new client is rejected");
     }
+
 
     static int getCurrentClientNum() {
         return currentClientNum;
     }
 
     static void setCurrentClientNum(int currentClientNum) {
+       synchronized (lock) {
         Server.currentClientNum = currentClientNum;
+       }
     }
 }

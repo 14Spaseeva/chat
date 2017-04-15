@@ -26,12 +26,16 @@ public class Session implements Runnable {
                 message = dataInputStream.readUTF();
                 System.out.println(String.format ("[%s]: %s ", clName,  message));
             }
-            Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
-            log.info(String.format ( "[%s] was stopped", clName));
-            socket.close();
+//            Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
+//            log.info(String.format ( "[%s] was stopped", clName));
+//            socket.close();
+
+              Server.closeSession ( socket, clName) ;
+
         } catch (Exception e) {
             if (e.getMessage().equals("Connection reset")) {
-                Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
+//                Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
+                Server.closeSession ( socket, clName) ;
                 log.error(String.format (" connection was reset by [%s] ", clName));
             }
             else log.error(String.format("Session.run() -> Exception : %s", e)   );
