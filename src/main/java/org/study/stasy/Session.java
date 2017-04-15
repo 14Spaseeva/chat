@@ -9,16 +9,21 @@ import java.net.Socket;
 public class Session implements Runnable {
     private Logger log = LoggerFactory.getLogger("session");
 
+    private Server server;
     private Socket socket;
     private String clName;
 
-    Session(Socket socket_) {
+
+
+    Session(Server serv, Socket socket_) {
+        server = serv;
         this.socket = socket_;
         this.clName= (String.format ("%s:%s", socket.getInetAddress().getHostAddress() , Integer.toString(socket.getPort())));
     }
 
     public void run() {
         try {
+
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
             String message = "";
@@ -30,12 +35,12 @@ public class Session implements Runnable {
 //            log.info(String.format ( "[%s] was stopped", clName));
 //            socket.close();
 
-              Server.closeSession ( socket, clName) ;
+              server.closeSession ( socket, clName) ;
 
         } catch (Exception e) {
             if (e.getMessage().equals("Connection reset")) {
 //                Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
-                Server.closeSession ( socket, clName) ;
+                server.closeSession ( socket, clName) ;
                 log.error(String.format (" connection was reset by [%s] ", clName));
             }
             else log.error(String.format("Session.run() -> Exception : %s", e)   );
