@@ -17,13 +17,11 @@ public class Client {
             dataInputStream = new DataInputStream(socket.getInputStream());
 
             if (!dataInputStream.readUTF().equals("Sok")){
-                log.warn("Client can't be created");
-                System.exit(0);
+                log.error("Client can't be created");
             }
             log.info("Client is started");
         } catch (IOException e) {
-            log.error("Socket can't be created");
-            e.printStackTrace();
+            log.trace("Socket can't be created");
         }
     }
 
@@ -38,13 +36,13 @@ public class Client {
                 log.info("sent");
             } catch (Exception e) {
                 if(e.getMessage().contains("Connection reset")){
-                    log.error("Server is not connected");
+                    log.error("Connection reset");
                     socket.close();
                     System.exit(-1);
                 }
                 else
-                    e.printStackTrace();
 
+                    log.trace("Server is not connected");
             }
         }
 

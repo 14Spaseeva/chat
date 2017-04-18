@@ -10,10 +10,9 @@ import java.net.Socket;
 
 public class Server {
     private static Logger log = LoggerFactory.getLogger("server");
-    private final static int MAX_CLIENT_NUM = 1;
+    private final static int MAX_CLIENT_NUM = 2;
     private static int currentClientNum = 0;
     private ServerSocket serverSocket = null;
-   public static final Thread server = Thread.currentThread();
 
     private static final Object lock = new Object();
 
@@ -37,7 +36,6 @@ public class Server {
         synchronized (lock) {
             currentClientNum--;
             lock.notify();
-
         }
         log.info(String.format ( "[%s] was stopped", clName));
 
@@ -47,19 +45,23 @@ public class Server {
     работа по добавлению клиента
      */
     private void work(){
+        Channel<Runnable> channel = new Channel<Runnable>(MAX_CLIENT_NUM);
+        createDispatcher(channel);
+
         while (true) {
             try {
                 Socket socket = serverSocket.accept();
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-                if (currentClientNum >= MAX_CLIENT_NUM) {
-                    queueClient();
-                }
-                addClient(socket, dataOutputStream);
+                addClient(socket, dataOutputStream, channel);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void createDispatcher (Channel<Runnable> chan) {
+        Thread dispatcher = new Thread(new Dispatcher(chan));
+        dispatcher.start();
     }
 
     public static void main(String[] args)      {
@@ -70,38 +72,36 @@ public class Server {
     /*
     создание клиента или оповещение что кл не может быть добавлен
      */
-    private void addClient(Socket socket, DataOutputStream dataOutputStream){
-        try {
-            Thread new_client = new Thread(new Session(this, socket));
-            new_client.setName(String.format("%s:%s",
-                    socket.getInetAddress().getHostAddress(), Integer.toString(socket.getPort())));
-            new_client.start();
-            synchronized (lock) {
-                currentClientNum++;
+    private void addClient(Socket socket, DataOutputStream dataOutputStream, Channel<Runnable> chan){
 
-             }
-            dataOutputStream.writeUTF("Sok");
-            log.info("[New client] : {} ({})", new_client.getName(), getCurrentClientNum());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    private void queueClient() {
-
-        try {
-            synchronized (lock) {
-                log.info("New user is waiting for the connection");
-                lock.wait();
-
-
+        synchronized (lock) {
+            while (currentClientNum>= MAX_CLIENT_NUM) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (InterruptedException e) {
-            log.error("Connection waiting is failed");
+            currentClientNum++;
         }
+        chan.put(new Session(this, socket));
+        log.info("[New client]  ({})",  getCurrentClientNum());
 
     }
+
+
+//    private void queueClient() {
+//
+//        try {
+//            synchronized (lock) {
+//                log.info("New user is waiting for the connection");
+//                lock.wait();
+//            }
+//        } catch (InterruptedException e) {
+//            log.error("Connection waiting is failed");
+//        }
+//
+//    }
 
     static int getCurrentClientNum() {
         return currentClientNum;

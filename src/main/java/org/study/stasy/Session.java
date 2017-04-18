@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 public class Session implements Runnable {
@@ -17,36 +19,35 @@ public class Session implements Runnable {
 
     Session(Server serv, Socket socket_) {
         server = serv;
-        this.socket = socket_;
-        this.clName= (String.format ("%s:%s", socket.getInetAddress().getHostAddress() , Integer.toString(socket.getPort())));
+        socket = socket_;
+        clName= (String.format ("%s:%s", socket.getInetAddress().getHostAddress() , Integer.toString(socket.getPort())));
     }
 
     public void run() {
         try {
 
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+            try {
+                dataOutputStream.writeUTF("Sok");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             String message = "";
             while (!message.equals("@exit")) {
                 message = dataInputStream.readUTF();
                 System.out.println(String.format ("[%s]: %s ", clName,  message));
             }
-//            Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
-//            log.info(String.format ( "[%s] was stopped", clName));
-//            socket.close();
-
-              server.closeSession ( socket, clName) ;
-
         } catch (Exception e) {
             if (e.getMessage().equals("Connection reset")) {
-//                Server.setCurrentClientNum(Server.getCurrentClientNum()-1);
-                server.closeSession ( socket, clName) ;
                 log.error(String.format (" connection was reset by [%s] ", clName));
             }
             else log.error(String.format("Session.run() -> Exception : %s", e)   );
         }
+        finally {
+            server.closeSession ( socket, clName) ;
+        }
     }
-
-
-
 }
