@@ -5,21 +5,29 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 
-public class Channel <T> {
+
+/**
+ *
+ * @param <T>
+ */
+public class Channel<T> {
     private static Logger log = LoggerFactory.getLogger("channel");
 
-
-    private final int maxSize; // максимальное количество сессий на канале
-    private final LinkedList<T> queue = new LinkedList<T>();
+    /**
+     * @param maxSize --  максимальное количество сессий на канале
+     */
+    private final int maxSize;
+    private final LinkedList<T> queue = new LinkedList<>();
     private final Object lock = new Object();
 
-    public Channel(int maxNum_) {
-        maxSize = maxNum_;
+    public Channel(int maxNum) {
+        maxSize = maxNum;
     }
 
-    public int getChannelSize(){
+    public synchronized int getSize() {
         return queue.size();
     }
+
 
     public void put(T obj) {
         synchronized (lock) {
@@ -27,7 +35,7 @@ public class Channel <T> {
                 try {
                     lock.wait();
                 } catch (InterruptedException e) {
-                    log.trace("wait (?)");
+                    log.trace("wait (?)", e);
                 }
             }
             queue.addLast(obj);
@@ -35,14 +43,18 @@ public class Channel <T> {
         }
     }
 
-    public T getFirst() throws InterruptedException {
-        synchronized (lock) {
-            while (queue.isEmpty()) {
+
+    public synchronized T get() {
+        while (queue.isEmpty()) {
+            try {
                 lock.wait();
+            } catch (InterruptedException e) {
+                log.trace(" method getFirst() : lock.wait \n {}", e);
             }
-            lock.notifyAll();
-            return (T) queue.removeFirst();
         }
+        lock.notifyAll();
+        return queue.removeFirst();
     }
+
 
 }

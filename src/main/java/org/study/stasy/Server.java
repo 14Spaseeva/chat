@@ -2,114 +2,53 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import org.study.stasy.netutils.MessageHandlerFactory;
 
 public class Server {
-    private static Logger log = LoggerFactory.getLogger("server");
-    private final static int MAX_CLIENT_NUM = 2;
-    private static int currentClientNum = 0;
-    private ServerSocket serverSocket = null;
-
-    private static final Object lock = new Object();
-
-    private Server(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-            log.info("Server is started on the {} port", port);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    private static Logger log = LoggerFactory.getLogger(Server.class.getSimpleName());
 
 
-    void closeSession (Socket socket, String clName) {
-
-        try {
-            socket.close();
-        } catch (IOException e) {
-            log.error(" Socket can't be closed ");
-        }
-        synchronized (lock) {
-            currentClientNum--;
-            lock.notify();
-        }
-        log.info(String.format ( "[%s] was stopped", clName));
-
-    }
-
-    /*
-    работа по добавлению клиента
+    /**
+     * @param maxClientNum               -- получение максимального количества подключений
+     * @param portNumber                 -- получение номера порта из аргументов
+     * @param classMessageHandlerFactory -- название класса реализации фабрики
+     * @param messageHandlerFactory
+     * @param args
+     * @param channel
      */
-    private void work(){
-        Channel<Runnable> channel = new Channel<Runnable>(MAX_CLIENT_NUM);
-        createDispatcher(channel);
-
-        while (true) {
-            try {
-                Socket socket = serverSocket.accept();
-                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                addClient(socket, dataOutputStream, channel);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    private static void setParams(int maxClientNum, int portNumber,
+                                  Class classMessageHandlerFactory, MessageHandlerFactory messageHandlerFactory,
+                                  Channel<Runnable> channel,
+                                  String[] args) {
+        try {
+            portNumber = Integer.parseInt(args[0]);
+            maxClientNum = Integer.parseInt(args[1]);
+            classMessageHandlerFactory = Class.forName(args[2]);
+            messageHandlerFactory = (MessageHandlerFactory) classMessageHandlerFactory.newInstance();
+            channel = new Channel<Runnable>(maxClientNum);
+        } catch (NumberFormatException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            log.error("Wrong params \n {}", e);
+            return;
         }
     }
 
-    private void createDispatcher (Channel<Runnable> chan) {
-        Thread dispatcher = new Thread(new Dispatcher(chan));
-        dispatcher.start();
-    }
-
-    public static void main(String[] args)      {
-        Server server = new Server (Integer.parseInt( args[0]));
-        server.work();
-    }
-
-    /*
-    создание клиента или оповещение что кл не может быть добавлен
+    /**
+     *
+     * @param args
+     * @throws ClassNotFoundException
      */
-    private void addClient(Socket socket, DataOutputStream dataOutputStream, Channel<Runnable> chan){
+    public static void main(String[] args) throws ClassNotFoundException {
+        int maxClientNum = 0;
+        int portNumber = 0;
+        Class classMHFactory = null;
+        MessageHandlerFactory mHFactory = null;
+        Channel<Runnable> channel = null;
 
-        synchronized (lock) {
-            while (currentClientNum>= MAX_CLIENT_NUM) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            currentClientNum++;
-        }
-        chan.put(new Session(this, socket));
-        log.info("[New client]  ({})",  getCurrentClientNum());
+        setParams(maxClientNum, portNumber, classMHFactory, mHFactory, channel, args);
 
+        new Host(portNumber, channel, mHFactory).start();
+        new Dispatcher(channel, new ThreadPool(maxClientNum)).start();
     }
 
 
-//    private void queueClient() {
-//
-//        try {
-//            synchronized (lock) {
-//                log.info("New user is waiting for the connection");
-//                lock.wait();
-//            }
-//        } catch (InterruptedException e) {
-//            log.error("Connection waiting is failed");
-//        }
-//
-//    }
-
-    static int getCurrentClientNum() {
-        return currentClientNum;
-    }
-
-    static void setCurrentClientNum(int currentClientNum) {
-       synchronized (lock) {
-        Server.currentClientNum = currentClientNum;
-       }
-    }
 }

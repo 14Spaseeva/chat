@@ -1,41 +1,61 @@
 package org.study.stasy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.study.stasy.netutils.MessageHandler;
+import org.study.stasy.netutils.MessageHandlerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 
-public class Host {
+public class Host implements Runnable {
+    private static Logger log = LoggerFactory.getLogger("host");
+    private int portNumber;
+    private ServerSocket serverSocket = null;
+    private Channel<Runnable> channel;
+    private MessageHandler messageHandler;
 
-    public static void main(String[] args) {
-        int portNumber;
-        try {
-            portNumber = Integer.parseInt(args[0]); // получение номера порта из аргументов
-        } catch (NumberFormatException e) {
-            System.err.println("Server: Wrong port format. Should be integer. Try again.");
-            return;
-        }
-        int maxClientNum;
-        try {
-            maxClientNum = Integer.parseInt(args[1]); // получение максимального количества подключений
-        } catch (NumberFormatException e) {
-            System.err.println("Server: Wrong maximum number of connections format. Should be integer. Try again.");
-            return;
-        }
 
-        ServerSocket serverSocket;
+
+    Host(int portNumber, Channel<Runnable> channel,
+         MessageHandlerFactory messageHandlerFactory) {
+
+        this.portNumber = portNumber;
+        this.channel = channel;
+        this.messageHandler = messageHandlerFactory.create();
         try {
             serverSocket = new ServerSocket(portNumber);
         } catch (IOException e) {
-            System.err.println("Server: The port " + portNumber + " is busy.");
-            return;
+            log.error("Oops! :", e);
         }
+        log.info("New host {} is created", this);
+    }
 
-        Thread server = new Thread(new Server(serverSocket, portNumber, maxClientNum));
-        server.setName("SERVER");
-        server.start();
+
+    @Override
+    public void run() {
+        log.info("Host started on the {} port", portNumber);
+        while (true) {
+            try {
+                Socket socket = serverSocket.accept(); // заставляем сервер ждать подключений
+                // Исполнение программы зависает в этом месте, пока клиент не подключится
+                channel.put(new Session(socket, messageHandler));
+            } catch (IOException e) {
+                log.error("Oops! \n {}", e);
+            }
+        }
+    }
+
+      void start(){
+        Thread thread =new Thread(this);;
+        thread.setName(Host.class.getSimpleName());
+        thread.start();
 
     }
+
 }
+
 
 
 
