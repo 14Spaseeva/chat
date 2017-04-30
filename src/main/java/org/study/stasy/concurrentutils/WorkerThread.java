@@ -1,10 +1,8 @@
-package org.study.stasy;
+package org.study.stasy.concurrentutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.study.stasy.Exeptions.*;
-import org.study.stasy.concurrentutils.Stoppable;
-
 import java.io.IOException;
 /*
 import net.jcip.annotations.GuardedBy;

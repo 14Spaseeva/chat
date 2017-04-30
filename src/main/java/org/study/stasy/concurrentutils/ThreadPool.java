@@ -1,12 +1,8 @@
-package org.study.stasy;
+package org.study.stasy.concurrentutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.study.stasy.Exeptions.DispatcherException;
-import org.study.stasy.Exeptions.SessionException;
-import org.study.stasy.Exeptions.TreadPoolException;
-import org.study.stasy.Exeptions.WorkerThreadExсeption;
-import org.study.stasy.concurrentutils.Stoppable;
+import org.study.stasy.Exeptions.*;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -26,7 +22,9 @@ import java.util.LinkedList;
  * allWorkers - база работников
  * maxSize - макс. число свободных работников
  */
-class ThreadPool {
+//TODO Sigleton?
+
+public class ThreadPool {
     private static Logger log = LoggerFactory.getLogger("threadPool");
     private final Object lock = new Object();
     private final LinkedList<Stoppable> allWorkers;
@@ -35,7 +33,7 @@ class ThreadPool {
 
     /**
      */
-    ThreadPool(int maxSize) {
+    public ThreadPool(int maxSize) {
         this.maxSize = maxSize;
         this.freeWorkers = new Channel<>(maxSize);
         this.allWorkers = new LinkedList<>();
@@ -77,7 +75,7 @@ class ThreadPool {
         freeWorkers.put(workerThread);
     }
 
-    void stop() throws TreadPoolException {
+    public void stop() throws TreadPoolException {
         while (allWorkers.size() > 0) {
             try {
                 allWorkers.removeFirst().stop();

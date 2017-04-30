@@ -1,12 +1,9 @@
-package org.study.stasy;
+package org.study.stasy.concurrentutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.study.stasy.Exeptions.DispatcherException;
-import org.study.stasy.concurrentutils.Stoppable;
 
-/*
- */
 public class Dispatcher implements Stoppable {
 
     private static Logger log = LoggerFactory.getLogger("dispatcher");
@@ -15,7 +12,7 @@ public class Dispatcher implements Stoppable {
     private boolean status;
     private Thread dispatcher;
 
-    Dispatcher(Channel<Stoppable> chan, ThreadPool threadPool) {
+    public Dispatcher(Channel<Stoppable> chan, ThreadPool threadPool) {
         this.channel = chan;
         this.threadPool = threadPool;
         this.status = true;
@@ -33,7 +30,7 @@ public class Dispatcher implements Stoppable {
         }
     }
 
-    void start() {
+    public void start() {
         dispatcher.setDaemon(true);
         dispatcher.setName(Dispatcher.class.getSimpleName());
         dispatcher.start();

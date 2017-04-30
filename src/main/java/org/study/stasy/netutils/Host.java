@@ -1,10 +1,9 @@
-package org.study.stasy;
+package org.study.stasy.netutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.study.stasy.concurrentutils.Channel;
 import org.study.stasy.concurrentutils.Stoppable;
-import org.study.stasy.netutils.MessageHandler;
-import org.study.stasy.netutils.MessageHandlerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -20,8 +19,8 @@ public class Host implements Stoppable {
     private final MessageHandler messageHandler;
     private Thread host;
 
-    Host(int portNumber, Channel<Stoppable> channel,
-         MessageHandlerFactory messageHandlerFactory) {
+    public Host(int portNumber, Channel<Stoppable> channel,
+                MessageHandlerFactory messageHandlerFactory) {
 
 
         this.status = true;
@@ -56,7 +55,7 @@ public class Host implements Stoppable {
 
     }
 
-    void start() {
+    public void start() {
         host.setName(Host.class.getSimpleName());
         host.start();
     }

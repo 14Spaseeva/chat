@@ -1,4 +1,4 @@
-package org.study.stasy;
+package org.study.stasy.app;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
