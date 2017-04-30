@@ -6,11 +6,10 @@ import org.study.stasy.netutils.MessageHandler;
 public class PrintMessageHandler implements MessageHandler{
 
     /**
-     * обработки сообщения от клиента (в нашем случае - вывод сообщения в консоль)
-     * @param msg
+     * обработки сообщения от клиента
      */
     @Override
-    public void handle(String msg) {
-        System.out.printf(msg);
+    public void handle(String name, String msg) {
+        System.out.println(String.format("[%s] : %s", name, msg));
     }
 }

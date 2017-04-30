@@ -2,58 +2,81 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.study.stasy.concurrentutils.Stoppable;
 import org.study.stasy.netutils.MessageHandler;
 import org.study.stasy.netutils.MessageHandlerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+//Singleton
 
-public class Host implements Runnable {
+public class Host implements Stoppable {
     private static Logger log = LoggerFactory.getLogger("host");
+    private boolean status;
     private int portNumber;
     private ServerSocket serverSocket = null;
-    private Channel<Runnable> channel;
-    private MessageHandler messageHandler;
+    private final Channel<Stoppable> channel;
+    private final MessageHandler messageHandler;
+    private Thread host;
 
-
-
-    Host(int portNumber, Channel<Runnable> channel,
+    Host(int portNumber, Channel<Stoppable> channel,
          MessageHandlerFactory messageHandlerFactory) {
 
+
+        this.status = true;
         this.portNumber = portNumber;
+        this.host = new Thread(this);
         this.channel = channel;
         this.messageHandler = messageHandlerFactory.create();
         try {
             serverSocket = new ServerSocket(portNumber);
         } catch (IOException e) {
-            log.error("Oops! :", e);
+            log.error("Oops! :{}", e);
         }
-        log.info("New host {} is created", this);
     }
 
 
     @Override
     public void run() {
-        log.info("Host started on the {} port", portNumber);
-        while (true) {
-            try {
-                Socket socket = serverSocket.accept(); // заставляем сервер ждать подключений
+        log.info("Host is runned on the {} port", portNumber);
+        try {
+            while (status) {
+                Socket clientSocket = serverSocket.accept(); // заставляем хост ждать подключений
+                //Как только клиент подключается - сокет для клиента сразу же создается. (clientSocket.isconnected iscreated is bound = true)
                 // Исполнение программы зависает в этом месте, пока клиент не подключится
-                channel.put(new Session(socket, messageHandler));
-            } catch (IOException e) {
-                log.error("Oops! \n {}", e);
+                log.info("Create new session");
+                Session newSession= new Session(clientSocket, messageHandler);
+                channel.put(newSession);
             }
+        } catch (IOException e) {
+            log.error(" Host run(): Socket error{}", e);
+            this.stop();
+        }
+
+    }
+
+    void start() {
+        host.setName(Host.class.getSimpleName());
+        host.start();
+    }
+
+//добавить свой эксепшн
+
+    @Override
+    public void stop() {
+        if (status) {
+            status = false;
+            host.interrupt();
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                log.error("Oops! {}", e);
+                return;
+            }
+            log.info("host is stopped");
         }
     }
-
-      void start(){
-        Thread thread =new Thread(this);;
-        thread.setName(Host.class.getSimpleName());
-        thread.start();
-
-    }
-
 }
 
 

@@ -2,8 +2,13 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.study.stasy.Exeptions.ClientException;
+import org.study.stasy.Exeptions.DispatcherException;
+import org.study.stasy.Exeptions.SessionException;
+import org.study.stasy.Exeptions.TreadPoolException;
+import org.study.stasy.Exeptions.WorkerThreadExсeption;
+import org.study.stasy.concurrentutils.Stoppable;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 /*
@@ -17,54 +22,52 @@ import java.util.LinkedList;
  */
 
 /**
- * создать новый канал
- * freeWorkers -  те потоки, которые будут исполнять наши задачи. если свободных нет, ждем (свободные рабочие)
+ * freeWorkers -  свободные рабочие
  * allWorkers - база работников
+ * maxSize - макс. число свободных работников
  */
-public class ThreadPool {
+class ThreadPool {
     private static Logger log = LoggerFactory.getLogger("threadPool");
-
-    private final LinkedList<Runnable> allWorkers = new LinkedList<>();
-    private final Channel<Runnable> freeWorkers;
-    private final int maxSize;
     private final Object lock = new Object();
+    private final LinkedList<Stoppable> allWorkers;
+    private final Channel<Stoppable> freeWorkers;
+    private final int maxSize;
 
     /**
-     * @param maxSize
      */
-    public ThreadPool(int maxSize) {
+    ThreadPool(int maxSize) {
         this.maxSize = maxSize;
-        freeWorkers = new Channel<>(maxSize);
-        WorkerThread worker = new WorkerThread(this);
-        allWorkers.addLast(worker);
-        freeWorkers.put(worker);
+        this.freeWorkers = new Channel<>(maxSize);
+        this.allWorkers = new LinkedList<>();
+        WorkerThread worker = new WorkerThread(this); //рабочие потоки
+        this.allWorkers.addLast(worker);
+        this.freeWorkers.put(worker);
     }
 
     /**
-     * if there is no freeWorkers, but allWorkers size != max, create new WorkerThread, put it
-     * in allWorkers, freeWorkers
-     * pass
      *
-     * @param task for execution to free workerThread
+     *
+     * @param task for execution for free workerTread
+     *             if there is no freeWorkers, but allWorkers.size != max, create new WorkerThread,
+     *             put it in allWorkers, freeWorkers
      */
-    public void execute(Runnable task) {
+    void execute(Stoppable task) {
         synchronized (lock) {
             if (freeWorkers.getSize() == 0) {
                 if (allWorkers.size() < maxSize) {
+                    log.info("создается новый worker");
                     WorkerThread worker = new WorkerThread(this);
                     allWorkers.addLast(worker);
                     freeWorkers.put(worker);
                 }
             }
+            try {
+                log.info("Берем первый в очереди экземпляр session и запускаем");
+                ((WorkerThread) freeWorkers.get()).execute(task);
+            } catch (WorkerThreadExсeption e) {
+                log.error(" Oops!:{}", e);
+            }
         }
-        try {
-            ((WorkerThread) freeWorkers.get()).execute(task);
-        } catch (ClientException e) {
-            e.printStackTrace();
-            log.trace(" method execute : \n", e);
-        }
-
-
     }
 
     /**
@@ -72,6 +75,16 @@ public class ThreadPool {
      */
     void onTaskCompleted(WorkerThread workerThread) {
         freeWorkers.put(workerThread);
+    }
+
+    void stop() throws TreadPoolException {
+        while (allWorkers.size() > 0) {
+            try {
+                allWorkers.removeFirst().stop();
+            } catch (DispatcherException | IOException | SessionException | IllegalAccessException e) {
+                throw new TreadPoolException("ThreadPool.stop() is failed ");
+            }
+        }
     }
 
 }

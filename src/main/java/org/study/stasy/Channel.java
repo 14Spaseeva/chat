@@ -4,56 +4,78 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- *
  * @param <T>
- */
-public class Channel<T> {
+ *       здесь хранится максимально возможное кол-во сессий
+ *       */
+
+class Channel<T> {
+
     private static Logger log = LoggerFactory.getLogger("channel");
 
-    /**
-     * @param maxSize --  максимальное количество сессий на канале
-     */
     private final int maxSize;
-    private final LinkedList<T> queue = new LinkedList<>();
+    private final LinkedList<T> queue; //очередь незапущенных клиентов, пришедших из хоста
     private final Object lock = new Object();
+    private Lock lock1 = new ReentrantLock();
 
-    public Channel(int maxNum) {
-        maxSize = maxNum;
+    Channel(int num) {
+
+        maxSize = num;
+        queue = new LinkedList<>();
     }
 
-    public synchronized int getSize() {
+
+    synchronized int getSize() {
         return queue.size();
     }
 
+    /**
+    , когда поток пытается положить элементы в полную очередь,
+    он ставится в ожидание до тех пор, пока какой-нибудь другой поток
+    не возьмет элементы их очереди и таким образом не освободит место в ней.
+     */
+    void put(T obj) {
 
-    public void put(T obj) {
+
         synchronized (lock) {
-            while (queue.size() == maxSize) {
+            while (queue.size() >= maxSize) {
                 try {
+                    log.info("New Session is waiting ");
                     lock.wait();
                 } catch (InterruptedException e) {
-                    log.trace("wait (?)", e);
+                    log.error("Oops: Channel put ! {}", e);
+                    return;
                 }
             }
             queue.addLast(obj);
-            lock.notifyAll();
+            lock.notifyAll(); //пробуждает потоки, которые поставлены в ожидание при получении элементов из очереди
         }
     }
 
 
-    public synchronized T get() {
-        while (queue.isEmpty()) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                log.trace(" method getFirst() : lock.wait \n {}", e);
+    /**
+    Когда поток пытается получить элементы из пустой очереди,
+    он ставится в ожидание до тех пор, пока какой-нибудь другой
+    поток не положит элементы в очередь.
+     */
+    T get() {
+        synchronized (lock) {
+            while (queue.isEmpty()) {
+                try {
+                    log.info("Очередь пуста, ожидание");
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    log.error(" method getFirst() : lock.wait \n {}", e);
+                }
             }
+            lock.notifyAll();
+            log.info("пробудили потоки, которые поставлены в ожидание при получении элементов из очереди, взяли первый обьяект из очереди");
+            return queue.removeFirst();
         }
-        lock.notifyAll();
-        return queue.removeFirst();
     }
 
 

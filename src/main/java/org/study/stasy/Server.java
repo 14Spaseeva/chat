@@ -2,53 +2,74 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.study.stasy.Exeptions.DispatcherException;
+import org.study.stasy.Exeptions.TreadPoolException;
+import org.study.stasy.concurrentutils.Stoppable;
 import org.study.stasy.netutils.MessageHandlerFactory;
 
 public class Server {
     private static Logger log = LoggerFactory.getLogger(Server.class.getSimpleName());
 
+    private static int maxSessionNum;
+    private static int portNumber;
+    private static Class classMHFactory;
+    private static MessageHandlerFactory mHFactory;
+    private static Channel<Stoppable> channel;
+    private static Host host;
+    private static Dispatcher dispatcher;
+    private static ThreadPool threadPool;
 
-    /**
-     * @param maxClientNum               -- получение максимального количества подключений
-     * @param portNumber                 -- получение номера порта из аргументов
-     * @param classMessageHandlerFactory -- название класса реализации фабрики
-     * @param messageHandlerFactory
-     * @param args
-     * @param channel
-     */
-    private static void setParams(int maxClientNum, int portNumber,
-                                  Class classMessageHandlerFactory, MessageHandlerFactory messageHandlerFactory,
-                                  Channel<Runnable> channel,
-                                  String[] args) {
-        try {
-            portNumber = Integer.parseInt(args[0]);
-            maxClientNum = Integer.parseInt(args[1]);
-            classMessageHandlerFactory = Class.forName(args[2]);
-            messageHandlerFactory = (MessageHandlerFactory) classMessageHandlerFactory.newInstance();
-            channel = new Channel<Runnable>(maxClientNum);
-        } catch (NumberFormatException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            log.error("Wrong params \n {}", e);
-            return;
-        }
-    }
+
 
     /**
      *
-     * @param args
-     * @throws ClassNotFoundException
-     */
-    public static void main(String[] args) throws ClassNotFoundException {
-        int maxClientNum = 0;
-        int portNumber = 0;
-        Class classMHFactory = null;
-        MessageHandlerFactory mHFactory = null;
-        Channel<Runnable> channel = null;
-
-        setParams(maxClientNum, portNumber, classMHFactory, mHFactory, channel, args);
-
-        new Host(portNumber, channel, mHFactory).start();
-        new Dispatcher(channel, new ThreadPool(maxClientNum)).start();
+     * */
+    public static void main(String[] args) {
+        setParams(args[0], args[1], args[2]);
+        launchServer();
     }
 
+    private static void setParams(String port, String maxSN, String className) {
+        try {
+            portNumber = Integer.parseInt(port);
+            maxSessionNum = Integer.parseInt(maxSN);
+            classMHFactory = Class.forName(className);
+            mHFactory = (MessageHandlerFactory) classMHFactory.newInstance();
+            channel = new Channel<>(maxSessionNum);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            log.error("{}", e);
+        }
+    }
+
+    private static void launchServer() {
+        // shutdown-ловушка
+/*        MyShutdownHook shutdownHook = new MyShutdownHook();
+        Runtime.getRuntime().addShutdownHook(shutdownHook);*/
+        host = new Host(portNumber, channel, mHFactory);
+        host.start();
+        threadPool = new ThreadPool(maxSessionNum);
+        dispatcher = new Dispatcher(channel, threadPool); //
+        dispatcher.start();
+    }
+    private static class MyShutdownHook extends Thread {
+
+        public void run() {
+            shutdown();
+        }
+   }
+
+    private static void shutdown() {
+        log.info("Shutting down");
+        try {
+            host.stop();
+            threadPool.stop();
+            dispatcher.stop();
+        } catch (TreadPoolException | DispatcherException e) {
+            log.warn("during shutting down: {}", e);
+        }
+        log.info("Good night!");
+    }
 
 }
+
+
