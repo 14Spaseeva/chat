@@ -7,6 +7,14 @@ import org.study.stasy.Exeptions.DispatcherException;
 import org.study.stasy.Exeptions.TreadPoolException;
 import org.study.stasy.netutils.Host;
 import org.study.stasy.netutils.MessageHandlerFactory;
+import sun.plugin2.message.ShutdownJVMMessage;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.channels.ShutdownChannelGroupException;
+import java.sql.Time;
+import java.time.LocalDateTime;
 
 public class Server {
     private static Logger log = LoggerFactory.getLogger(Server.class.getSimpleName());
@@ -21,16 +29,7 @@ public class Server {
     private static ThreadPool threadPool;
 
 
-
-    /**
-     *
-     * */
-    public static void main(String[] args) {
-        setParams(args[0], args[1], args[2]);
-        launchServer();
-    }
-
-    private static void setParams(String port, String maxSN, String className) {
+    private Server(String port, String maxSN, String className) {
         try {
             portNumber = Integer.parseInt(port);
             maxSessionNum = Integer.parseInt(maxSN);
@@ -40,37 +39,52 @@ public class Server {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             log.error("{}", e);
         }
+
     }
 
-    private static void launchServer() {
+    private void launch() {
         // shutdown-ловушка
-/*        MyShutdownHook shutdownHook = new MyShutdownHook();
-        Runtime.getRuntime().addShutdownHook(shutdownHook);*/
+        MyShutdownHook shutdownHook = new MyShutdownHook();
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+
         host = new Host(portNumber, channel, mHFactory);
         host.start();
         threadPool = new ThreadPool(maxSessionNum);
         dispatcher = new Dispatcher(channel, threadPool); //
         dispatcher.start();
     }
-    private static class MyShutdownHook extends Thread {
 
+
+    public static void main(String[] args) {
+        Server server = new Server(args[0], args[1], args[2]);
+        server.launch();
+
+
+    }
+
+    private class MyShutdownHook extends Thread {
         public void run() {
             shutdown();
         }
-   }
 
-    private static void shutdown() {
-        log.info("Shutting down");
+    }
+
+    private void shutdown() {
         try {
+
+            log.info("Shutting down");
             host.stop();
             threadPool.stop();
             dispatcher.stop();
-        } catch (TreadPoolException | DispatcherException e) {
-            log.warn("during shutting down: {}", e);
+
+            log.info("Good night!");
+        } catch (TreadPoolException | DispatcherException e1) {
+            log.error("error of shutting down");
         }
-        log.info("Good night!");
     }
 
 }
+
+
 
 

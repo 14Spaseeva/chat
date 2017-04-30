@@ -38,6 +38,7 @@ public class Dispatcher implements Stoppable {
 
     @Override
     public void stop() throws DispatcherException {
+
         if (status) {
             status = false;
             dispatcher.interrupt();

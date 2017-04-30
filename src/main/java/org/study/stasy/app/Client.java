@@ -30,7 +30,7 @@ public class Client {
             fromServerCtrlMsg = in.readUTF();
             log.info("ctrl msh is received");
         } catch (IOException e) {
-            throw new ClientException("Client constructor: socket error:", e);
+            throw new ClientException("Client constructor: Socket error:");
         }
         if (!fromServerCtrlMsg.equals(CTRL_MSG))
             throw new ClientException("Client constructor: invalid control message=", fromServerCtrlMsg);

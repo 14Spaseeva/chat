@@ -69,7 +69,7 @@ public class Channel<T> {
                     log.info("Очередь пуста, ожидание");
                     lock.wait();
                 } catch (InterruptedException e) {
-                    log.error(" method getFirst() : lock.wait \n {}", e);
+                    log.error("Ошибка ожидания");
                 }
             }
             lock.notifyAll();

@@ -76,6 +76,7 @@ public class ThreadPool {
     }
 
     public void stop() throws TreadPoolException {
+        log.info("ThreadPool stop()");
         while (allWorkers.size() > 0) {
             try {
                 allWorkers.removeFirst().stop();

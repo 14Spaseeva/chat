@@ -49,7 +49,7 @@ public class Host implements Stoppable {
                 channel.put(newSession);
             }
         } catch (IOException e) {
-            log.error(" Host run(): Socket error{}", e);
+            log.error(" Host run(): Socket error{}");
             this.stop();
         }
 
@@ -64,6 +64,8 @@ public class Host implements Stoppable {
 
     @Override
     public void stop() {
+        log.info("host stop()");
+
         if (status) {
             status = false;
             host.interrupt();

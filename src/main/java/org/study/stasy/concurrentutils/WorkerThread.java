@@ -44,7 +44,7 @@ public class WorkerThread implements Stoppable {
             while (status) {
                 while (currentTask == null) {
                     try {
-                        log.info("WorkerTread run(): wait");
+                       // log.info("WorkerTread run(): wait");
                         lock.wait();
                     } catch (InterruptedException e) {
                         log.error("ошибка ожидания задач на выполнение");
