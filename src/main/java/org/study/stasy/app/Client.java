@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 
+import org.study.stasy.ClientGUI.SendMsgForm;
 import org.study.stasy.Exeptions.*;
 
 public class Client {
@@ -19,7 +20,7 @@ public class Client {
     private Socket fromServer;
     private String fromServerCtrlMsg;
 
-    private Client(String host, String port) throws ClientException {
+    public Client(String host, String port) throws ClientException {
 
         log.info("Connection...");
         status = true;
@@ -48,19 +49,35 @@ public class Client {
         }
     }
 
+    public void sendMsg(String msg) {
+        try {
+            out.writeUTF(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public String recieveMsg() throws IOException {
+        return in.readUTF();
+    }
 
     /**
      * While client has not sent  STOP_MSG he can send  clientMsg to Server
      */
     private void sendMessages() throws ClientException {
+        SendMsgForm sendMsgForm = new SendMsgForm();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        //  sendMsgForm.out("Dear User, to exit this app use command @exit");
         System.out.println("Dear User, to exit this app use command @exit");
         String clientMsg = "";
         try {
             while (!clientMsg.equals(STOP_MSG)) {
                 clientMsg = bufferedReader.readLine();
+                //  clientMsg = sendMsgForm.getSendingMsg();
                 out.writeUTF(clientMsg);
                 log.info("sent!");
+                //  sendMsgForm.out("sent!");
             }
             bufferedReader.close();
         } catch (IOException e) {

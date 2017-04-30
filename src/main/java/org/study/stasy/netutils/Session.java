@@ -21,6 +21,7 @@ public class Session implements Stoppable {
     private MessageHandler messageHandler;
     private static final String CTRL_MSG = "ok";
     private static final String STOP_MSG = "@exit";
+    private static final String CONFIRM_MSG = "#recieved";
     private DataInputStream dIS;
     private DataOutputStream dOS;
     private boolean status;
@@ -55,6 +56,7 @@ public class Session implements Stoppable {
             while (!receivedMsg.equals(STOP_MSG)) {
                 receivedMsg = dIS.readUTF();
                 messageHandler.handle(clName, receivedMsg);
+                dOS.writeUTF(CONFIRM_MSG);
             }
             stop();
         } catch (IOException e) {
