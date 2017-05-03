@@ -5,12 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 import org.study.stasy.ChatMessage;
-import org.study.stasy.ClientGUI.SendMsgForm;
 import org.study.stasy.Exeptions.*;
-import org.study.stasy.UserName;
 
 public class Client {
     private static Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
