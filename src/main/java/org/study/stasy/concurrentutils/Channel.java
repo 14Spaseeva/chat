@@ -20,7 +20,6 @@ public class Channel<T> {
     private final int maxSize;
     private final LinkedList<T> queue; //очередь незапущенных клиентов, пришедших из хоста
     private final Object lock = new Object();
-    private Lock lock1 = new ReentrantLock();
 
     public Channel(int num) {
 

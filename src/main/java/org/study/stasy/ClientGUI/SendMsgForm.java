@@ -3,6 +3,7 @@ package org.study.stasy.ClientGUI;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import org.study.stasy.ChatMessage;
 import org.study.stasy.Exeptions.ClientException;
 import org.study.stasy.app.Client;
 
@@ -19,7 +20,7 @@ import java.io.IOException;
  */
 public class SendMsgForm extends JFrame {
     private String host = "localhost";
-    private String port = "6659";
+    private String port = "6658";
     private JPanel rootPanel;
     private Client user;
     private JButton button1;
@@ -28,13 +29,14 @@ public class SendMsgForm extends JFrame {
 
     private static final String EXIT_MSG = "@exit";
 
-    public SendMsgForm() throws ClientException {
+    private SendMsgForm() throws ClientException {
         setContentPane(rootPanel);
         this.setSize(600, 300);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         textPane1.setEditable(false);
         button1.addActionListener(new ButtonActionSendMsg());
         user = new Client(host, port);
+        textPane1.setText(user.getUserName());
 
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -72,13 +74,13 @@ public class SendMsgForm extends JFrame {
         button1 = new JButton();
         button1.setText("Button");
         rootPanel.add(button1, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        rootPanel.add(spacer1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         textArea1 = new JTextArea();
         textArea1.setBackground(new Color(-2958115));
         rootPanel.add(textArea1, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(150, 50), null, 0, false));
         textPane1 = new JTextPane();
         rootPanel.add(textPane1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(150, 50), null, 0, false));
-        final JScrollPane scrollPane1 = new JScrollPane();
-        rootPanel.add(scrollPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
     }
 
     /**
@@ -92,15 +94,12 @@ public class SendMsgForm extends JFrame {
     class ButtonActionSendMsg implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-
-            sendMsg();
             try {
+                sendMsg();
                 recieveConfirm();
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
-
-
         }
 
         void sendMsg() {
@@ -108,12 +107,11 @@ public class SendMsgForm extends JFrame {
             user.sendMsg(text);
             textPane1.setText(String.format("%s\n>>>\t%s", textPane1.getText(), text));
             textArea1.setText("");
-
         }
 
         void recieveConfirm() throws IOException {
-            String text = user.recieveMsg();
-            textPane1.setText(String.format("%s\t\t%s", textPane1.getText(), text));
+            ChatMessage chatMessage = user.recieveMsg();
+            textPane1.setText(String.format("%s\t\t%s", textPane1.getText(), chatMessage.getMessage()));
         }
     }
 

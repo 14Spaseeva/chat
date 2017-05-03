@@ -8,7 +8,7 @@
     <properties>
       <preferredSize width="500" height="500"/>
     </properties>
-    <border type="none"/>
+    <border type="none" title-position="1"/>
     <children>
       <component id="747ac" class="javax.swing.JButton" binding="button1" default-binding="true">
         <constraints>
