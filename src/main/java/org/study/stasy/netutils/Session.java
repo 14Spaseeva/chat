@@ -87,7 +87,7 @@ public class Session implements Stoppable {
                     ChatMessage chatMessage;
                     chatMessage = (ChatMessage) objIn.readObject();
                     receivedMsg = chatMessage.getMessage();
-                  //  log.info(receivedMsg);
+                  log.info("[{}]",receivedMsg);
                     messageHandler.handle(chatMessage.getUserName(), receivedMsg);
                     ChatMessage confirmMsg = new ChatMessage(CONFIRM_MSG);
                     objOut.writeObject(confirmMsg);

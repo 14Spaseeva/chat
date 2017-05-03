@@ -32,7 +32,7 @@ public class Client {
             objIn = new ObjectInputStream(this.fromServer.getInputStream());
 
             ChatMessage fromServerCtrlMsg = (ChatMessage) objIn.readObject();
-            log.info("ctrl msh is received: "+ fromServerCtrlMsg.getMessage());
+            log.info("ctrl msh is received: " + fromServerCtrlMsg.getMessage());
             if (!(fromServerCtrlMsg.getMessage().equals(CTRL_MSG))) {
                 throw new ClientException("Client constructor: invalid control message=", fromServerCtrlMsg.getMessage());
             } else log.info("Ctrl msg is right");
@@ -64,23 +64,13 @@ public class Client {
     }
 
     //для GUI
-    public void sendMsg(String msg) {
-        try {
-            ChatMessage chatMessage = new ChatMessage(userName, msg);
-            objOut.writeObject(chatMessage);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public void sendMsg(String msg) throws IOException {
+        ChatMessage chatMessage = new ChatMessage(userName, msg);
+        objOut.writeObject(chatMessage);
     }
 
-    public ChatMessage recieveMsg() throws IOException {
-        try {
+    public ChatMessage recieveMsg() throws ClassNotFoundException, IOException {
             return (ChatMessage) objIn.readObject();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     /**
@@ -88,22 +78,22 @@ public class Client {
      */
     private void sendMessages() throws ClientException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        //  sendMsgForm.out("Dear User, to exit this app use command @exit");
         System.out.println("Dear User, to exit this app use command @exit");
         String clientMsg = "";
         try {
             while (!clientMsg.equals(STOP_MSG)) {
-               clientMsg = bufferedReader.readLine();
-                //out.writeUTF(clientMsg);
-                //log.info("sent!");
-                //  sendMsgForm.out("sent!");
+                clientMsg = bufferedReader.readLine();
                 ChatMessage chatMessage = new ChatMessage(userName, clientMsg);
                 objOut.writeObject(chatMessage);
                 log.info("sent! ");
+                ChatMessage confirmMsg = (ChatMessage) objIn.readObject();
+                log.info(confirmMsg.getMessage());
             }
             bufferedReader.close();
         } catch (IOException e) {
             throw new ClientException("Client sendMessage stream error: {}", e);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
