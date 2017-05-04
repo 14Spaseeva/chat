@@ -53,7 +53,7 @@ public class WorkerThread implements Stoppable {
                 try {
                     currentTask.run();
                 } catch (Exception e) {
-                    log.error(" currentTask.run()");
+                    log.error(" currentTask.run() {}", e);
                 } finally {
                     currentTask = null;
                     threadPool.onTaskCompleted(this);

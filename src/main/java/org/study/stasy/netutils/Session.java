@@ -6,9 +6,15 @@ import org.study.stasy.ChatMessage;
 import org.study.stasy.Exeptions.SessionException;
 import org.study.stasy.app.Client;
 import org.study.stasy.concurrentutils.Stoppable;
+import sun.plugin2.message.Message;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+
+import static org.study.stasy.app.Server.getUserList;
 
 
 /**
@@ -17,11 +23,12 @@ import java.net.Socket;
  * Input/ output streams for communication between Client and Server
  */
 public class Session implements Stoppable {
-    private Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
+    private Logger log = LoggerFactory.getLogger(Session.class.getSimpleName());
 
     private static final String CTRL_MSG = "ok";
     private static final String STOP_MSG = "@exit";
     private static final String CONFIRM_MSG = "#recieved";
+    private static final String HELLO_MSG = "#I'm fine";
 
     private Socket fromClientSocket;
     private MessageHandler messageHandler;
@@ -31,6 +38,8 @@ public class Session implements Stoppable {
 
 
     private final Object lock = new Object();
+    private String userName;
+    private ChatMessage chatMessage;
 
     Session(Socket socket, MessageHandler messageHandler) {
 
@@ -41,6 +50,7 @@ public class Session implements Stoppable {
             OutputStream out = fromClientSocket.getOutputStream();
             objOut = new ObjectOutputStream(out);
             objIn = new ObjectInputStream(in);
+
         } catch (IOException e) {
             log.error("Session constructor is failed");
         }
@@ -76,29 +86,72 @@ public class Session implements Stoppable {
     @Override
     public void run() {
         try {
-            ChatMessage ctrlMessage = new ChatMessage(CTRL_MSG);
-            objOut.writeObject(ctrlMessage);
-
-            log.info("ctrl msg is sent");
+            pingClient();
             String receivedMsg = "";
-         //   while (objIn.available() > 0) {
-                while (!receivedMsg.equals(STOP_MSG)) {
-
-                    ChatMessage chatMessage;
-                    chatMessage = (ChatMessage) objIn.readObject();
-                    receivedMsg = chatMessage.getMessage();
-                  log.info("[{}]",receivedMsg);
-                    messageHandler.handle(chatMessage.getUserName(), receivedMsg);
-                    ChatMessage confirmMsg = new ChatMessage(CONFIRM_MSG);
-                    objOut.writeObject(confirmMsg);
-                }
-         //   }
+            while (!receivedMsg.equals(STOP_MSG)) {
+                ChatMessage chatMessage;
+                chatMessage = (ChatMessage) objIn.readObject();
+                receivedMsg = chatMessage.getMessage();
+                log.info("[{}]", receivedMsg);
+                messageHandler.handle(chatMessage, this);
+              //  sendConfirmMsg();
+            }
+            //   }
             stop();
         } catch (IOException | ClassNotFoundException | SessionException e) {
             e.printStackTrace();
         }
 
 
+    }
+
+ /*   private void sendConfirmMsg() throws IOException {
+        ChatMessage confirmMsg = new ChatMessage(CONFIRM_MSG);
+        objOut.writeObject(confirmMsg);
+
+    }*/
+
+    private void pingClient() throws IOException, ClassNotFoundException {
+        ChatMessage ctrlMessage = new ChatMessage(CTRL_MSG);
+        objOut.writeObject(ctrlMessage);
+        log.info("ctrl msg is sent");
+
+        ChatMessage helloMsg;
+        helloMsg = (ChatMessage) objIn.readObject();
+        userName = helloMsg.getUserName();
+        if (!helloMsg.getMessage().equals(HELLO_MSG)) {
+            log.error("Hello_msg == [{}]", helloMsg.getMessage());
+        } else {
+            log.info("[{}] is connected", helloMsg.getUserName());
+          /*  broadcast(this, getUserList().getClientsList(),
+                    new ChatMessage(String.format("[%] [%] is connected",
+                            LocalDateTime.now(), helloMsg.getUserName())));*/
+            if (getUserList() != null) {
+               broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[%s] is connected", userName)));
+            }
+        }
+        try {
+            getUserList().addUser(userName, fromClientSocket, objOut, objIn);
+        } catch (Exception e) {
+            log.error("Session ping addUser :{}", e);
+        }
+    }
+
+    public void broadcast(Session session, ArrayList<Client> clientsArrayList, ChatMessage message) {
+        try {
+            log.info("broadcasting..");
+            for (Client client : clientsArrayList) {
+                objOut = (ObjectOutputStream) client.getOutputStream();
+                objOut.writeObject(message);
+
+            }
+        } catch (SocketException e) {
+            log.info("[{}] is disconnected", userName);
+            getUserList().deleteUser(userName);
+            this.broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -114,6 +167,10 @@ public class Session implements Stoppable {
                 try {
                     // dOS.writeUTF(String.format("GOOD BYE, DEAR [%s]"));
                     assert fromClientSocket != null;
+                    log.info("[{}] is disconnected", userName);
+                    getUserList().deleteUser(userName);
+                    this.broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
+
                     fromClientSocket.shutdownInput();
                     fromClientSocket.shutdownOutput();
                     fromClientSocket.close();

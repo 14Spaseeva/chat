@@ -3,11 +3,15 @@ package org.study.stasy.app;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.event.KeyAdapter;
 import java.io.*;
 import java.net.Socket;
 
 import org.study.stasy.ChatMessage;
+import org.study.stasy.ClientGUI.ClientApp;
 import org.study.stasy.Exeptions.*;
+
+import static java.lang.System.out;
 
 public class Client {
     private static Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
@@ -18,24 +22,20 @@ public class Client {
     private ObjectOutputStream objOut;
     private Socket fromServer;
     private String userName;
+    private static final String HELLO_MSG = "#I'm fine";
+private ClientApp clientApp;
 
-    public Client(String host, String port) throws ClientException {
+    public Client(String host, String port, String name) throws ClientException {
 
         log.info("Connection...");
         try {
+            userName = name;
             fromServer = new Socket(host, Integer.parseInt(port));
-
             objOut = new ObjectOutputStream(this.fromServer.getOutputStream());
             objIn = new ObjectInputStream(this.fromServer.getInputStream());
+            getCtrlMsg();
+            sendHelloMsg();
 
-            ChatMessage fromServerCtrlMsg = (ChatMessage) objIn.readObject();
-            log.info("ctrl msh is received: " + fromServerCtrlMsg.getMessage());
-            if (!(fromServerCtrlMsg.getMessage().equals(CTRL_MSG))) {
-                throw new ClientException("Client constructor: invalid control message=", fromServerCtrlMsg.getMessage());
-            } else log.info("Ctrl msg is right");
-
-            userName = String.format("[%s:%s]", fromServer.getInetAddress().getHostAddress(),
-                    Integer.toString(fromServer.getPort()));
         } catch (IOException e) {
             throw new ClientException("Client constructor: Socket error:");
         } catch (ClassNotFoundException e) {
@@ -44,21 +44,30 @@ public class Client {
 
     }
 
+
+    public Client(Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
+        fromServer = socket;
+        objOut = oos;
+        objIn = ois;
+
+    }
+
+
+
     public String getUserName() {
         return userName;
     }
 
+    private void getCtrlMsg() throws ClientException, IOException, ClassNotFoundException {
+        ChatMessage fromServerCtrlMsg = (ChatMessage) objIn.readObject();
+        log.info("ctrl msh is received: " + fromServerCtrlMsg.getMessage());
+        if (!(fromServerCtrlMsg.getMessage().equals(CTRL_MSG))) {
+            throw new ClientException("Client constructor: invalid control message=", fromServerCtrlMsg.getMessage());
+        } else log.info("Ctrl msg is right");
 
-    public static void main(String[] args) {
-
-        try {
-            Client client = new Client(args[0], args[1]);
-            client.sendMessages();
-            client.shutDownClient();
-        } catch (ClientException e) {
-            log.error("Client can't be created: ", e);
-        }
     }
+
+
 
     //для GUI
     public void sendMsg(String msg) throws IOException {
@@ -66,8 +75,9 @@ public class Client {
         objOut.writeObject(chatMessage);
     }
 
+
     public ChatMessage recieveMsg() throws ClassNotFoundException, IOException {
-            return (ChatMessage) objIn.readObject();
+        return (ChatMessage) objIn.readObject();
     }
 
     /**
@@ -75,7 +85,7 @@ public class Client {
      */
     private void sendMessages() throws ClientException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Dear User, to exit this app use command @exit");
+        out.println("Dear User, to exit this app use command @exit");
         String clientMsg = "";
         try {
             while (!clientMsg.equals(STOP_MSG)) {
@@ -94,10 +104,15 @@ public class Client {
         }
     }
 
+    private void sendHelloMsg() throws IOException {
+        ChatMessage confirmMsg = new ChatMessage(userName, HELLO_MSG);
+        objOut.writeObject(confirmMsg);
+    }
+
     /**
      * When client sent STOP_MSG or closed console/window/app this method is called.
      */
-    private void shutDownClient() throws ClientException {
+    public void shutDownClient() throws ClientException {
         try {
             fromServer.shutdownInput();
             fromServer.shutdownOutput();
@@ -111,4 +126,19 @@ public class Client {
         }
     }
 
+    public Object getOutputStream() {
+        return objOut;
+    }
+
+    public Object getIutputStream() {
+        return objIn;
+    }
+
+    public ClientApp getClientApp() {
+        return clientApp;
+    }
+
+    public void setClientApp(ClientApp clientApp) {
+        this.clientApp = clientApp;
+    }
 }

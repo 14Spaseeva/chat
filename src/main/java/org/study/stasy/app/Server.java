@@ -2,6 +2,8 @@ package org.study.stasy.app;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.study.stasy.ChatHistory;
+import org.study.stasy.UserList;
 import org.study.stasy.concurrentutils.*;
 import org.study.stasy.Exeptions.DispatcherException;
 import org.study.stasy.Exeptions.TreadPoolException;
@@ -20,7 +22,8 @@ public class Server {
     private static Host host;
     private static Dispatcher dispatcher;
     private static ThreadPool threadPool;
-
+    private static UserList userList;
+    private static ChatHistory chatHistory;
 
     private Server(String port, String maxSN, String className) {
         try {
@@ -35,11 +38,22 @@ public class Server {
 
     }
 
+    public synchronized static UserList getUserList() {
+
+            return userList;
+
+    }
+
+    public static ChatHistory getChatHistory() {
+        return chatHistory;
+    }
+
     private void launch() {
         // shutdown-ловушка
         MyShutdownHook shutdownHook = new MyShutdownHook();
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
+        userList = new UserList();
         host = new Host(portNumber, channel, mHFactory);
         host.start();
         threadPool = new ThreadPool(maxSessionNum);
