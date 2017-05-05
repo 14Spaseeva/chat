@@ -12,7 +12,7 @@ public class ChatHistory {
     public ChatHistory (){
         this.history = new ArrayList<>(maxSize);
     }
-    void addMessage (ChatMessage msg){
+  public  void addMessage (ChatMessage msg){
         if (this.history.size() > maxSize){
             this.history.remove(0);
         }
@@ -22,5 +22,6 @@ public class ChatHistory {
     List<ChatMessage> getHistory(){
         return history;
     }
+
 
 }

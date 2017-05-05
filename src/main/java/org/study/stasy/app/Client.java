@@ -23,16 +23,19 @@ public class Client {
     private Socket fromServer;
     private String userName;
     private static final String HELLO_MSG = "#I'm fine";
-private ClientApp clientApp;
+    private ClientApp clientApp;
 
-    public Client(String host, String port, String name) throws ClientException {
+    public Client(String host, String port) throws ClientException {
 
         log.info("Connection...");
         try {
-            userName = name;
+
+
             fromServer = new Socket(host, Integer.parseInt(port));
             objOut = new ObjectOutputStream(this.fromServer.getOutputStream());
             objIn = new ObjectInputStream(this.fromServer.getInputStream());
+            userName = userName = String.format("[%s:%s]", fromServer.getInetAddress().getHostAddress(),
+                    Integer.toString(fromServer.getPort()));
             getCtrlMsg();
             sendHelloMsg();
 
@@ -53,7 +56,6 @@ private ClientApp clientApp;
     }
 
 
-
     public String getUserName() {
         return userName;
     }
@@ -66,7 +68,6 @@ private ClientApp clientApp;
         } else log.info("Ctrl msg is right");
 
     }
-
 
 
     //для GUI

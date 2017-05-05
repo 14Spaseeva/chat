@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.study.stasy.ChatMessage;
 import org.study.stasy.Exeptions.ClientException;
+import org.study.stasy.UserName;
 import org.study.stasy.app.Client;
 
 import javax.swing.*;
@@ -25,7 +26,7 @@ public class ClientApp extends JFrame {
     private JPanel startPane;
 
     private String host = "localhost";
-    private String port = "6658";
+    private String port = "6657";
     private JPanel rootPanel;
     private Client user = null;
     private String userName;
@@ -36,7 +37,8 @@ public class ClientApp extends JFrame {
     private static final String EXIT_MSG = "@exit";
 
     private ClientApp() throws IOException, ClassNotFoundException {
-        mainWindow();
+
+        this.mainWindow();
     }
 
     private JTextField loginField;
@@ -73,6 +75,7 @@ public class ClientApp extends JFrame {
     }
 
     private void mainWindow() throws IOException, ClassNotFoundException {
+
         loginField = new JTextField("username", 15);
         loginField.addKeyListener(new KeyAdapter() {
             @Override
@@ -94,7 +97,6 @@ public class ClientApp extends JFrame {
         portFiels.setEditable(false);
 
         JPanel clientData = new JPanel(new GridBagLayout());
-        clientData.setBackground(Color.DARK_GRAY);
         clientData.setLayout(new GridBagLayout());
 
 
@@ -113,13 +115,14 @@ public class ClientApp extends JFrame {
 
         clientData.add(loginField, startLeft);
         clientData.add(loginButton, startRight);
+        clientData.setBackground(Color.darkGray);
 
         JPanel systemData = new JPanel(new GridBagLayout());
         systemData.add(hostField, startLeft);
         systemData.add(portFiels, startRight);
-
         JPanel loginPanel = new JPanel(new GridBagLayout());
 
+        loginPanel.setBackground(Color.darkGray);
 
         loginPanel.add(systemData, startLeft);
         loginPanel.add(clientData, startRight);
@@ -128,16 +131,16 @@ public class ClientApp extends JFrame {
 
         rootPanel = new JPanel();
         rootPanel.setLayout(new BorderLayout());
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         this.setSize(600, 300);
         this.setLocation(700, 400);
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.setVisible(true);
+        // this.setVisible(true);
 
         JPanel southPanel = new JPanel(); //нижняя
-        //   this.add(BorderLayout.SOUTH, southPanel);
-        southPanel.setBackground(Color.BLUE);
+        southPanel.setBackground(Color.lightGray);
         southPanel.setLayout(new GridBagLayout());
 
         messageBox = new JTextField("", 50);
@@ -152,17 +155,15 @@ public class ClientApp extends JFrame {
                     } catch (ClientException e1) {
                         e1.printStackTrace();
                     }
-                    /*try {
-                        recieveConfirm();
 
-                    } catch (IOException | ClassNotFoundException e1) {
-                        log.error("recieve error");
-                    }*/
                 }
             }
         });
         messageBox.requestFocus();
-        sendButton = new JButton("Send =)");
+        sendButton = new JButton();
+        sendButton.setIcon(new ImageIcon("D:\\idea projects\\chat\\target\\classes\\1457631818_send.png"));
+        sendButton.setToolTipText("Send Message");
+
         sendButton.addActionListener(new ClientApp.ButtonActionSendMsg());
         chatPane = new JTextPane();
         chatPane.setEditable(false);
@@ -192,6 +193,7 @@ public class ClientApp extends JFrame {
         rootPanel.add(BorderLayout.SOUTH, southPanel);
         rootPanel.add(BorderLayout.NORTH, loginPanel);
         this.add(rootPanel);
+        this.setTitle("Group chat\t Spaseeva Anastasiia\t33507/1");
 
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -200,6 +202,7 @@ public class ClientApp extends JFrame {
                     user.sendMsg(EXIT_MSG);
                     getUserList().deleteUser(userName);
                     user.shutDownClient();
+                    flag = false;
                     System.exit(0);
                 } catch (IOException | ClientException e1) {
                     e1.printStackTrace();
@@ -208,10 +211,20 @@ public class ClientApp extends JFrame {
         }); //закрытие окна через крестик
 
 
+        try {
+            user = new Client(host, port);
+            userName = user.getUserName();
+            flag = true;
+
+        } catch (ClientException e1) {
+            e1.printStackTrace();
+        }
         setVisible(true);
 
 
     }
+
+    private boolean flag = false;
 
     private void loginAction() {
         if (loginButton.getText().equals("Connect")) {
@@ -223,20 +236,24 @@ public class ClientApp extends JFrame {
                 JOptionPane.showMessageDialog(loginButton, "Please, Enter ur nickname",
                         "Nick Name is invalid", JOptionPane.ERROR_MESSAGE);
             }
-
             try {
-                user = new Client(host, port, userName);
+                user = new Client(host, port);
+                flag = true;
+
             } catch (ClientException e1) {
                 e1.printStackTrace();
             }
         } else {
+            loginButton.setText("Connect");
+
             try {
                 user.shutDownClient();
+                flag = false;
             } catch (ClientException e) {
                 e.printStackTrace();
             }
             getUserList().deleteUser(userName);
-            loginButton.setText("Connect");
+            setVisible(true);
         }
 
     }
@@ -252,6 +269,7 @@ public class ClientApp extends JFrame {
             messageBox.setText("");
         } else {
             user.shutDownClient();
+            flag = false;
             //TODO доделать диалоговое окно
             JDialog dialog = new JDialog();
             dialog.setVisible(true);
@@ -267,11 +285,11 @@ public class ClientApp extends JFrame {
             chatPane.setCaretPosition(chatPane.getText().length());
         }
         objIn.close();
-        try {
+      /*  try {
             user.shutDownClient();
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
         System.err.println("Closed client socket");
     }
 
@@ -291,20 +309,25 @@ public class ClientApp extends JFrame {
                 log.error("sendmsg error", e);
             } catch (ClientException e1) {
                 e1.printStackTrace();
-            }/*
-            try {
-                recieveConfirm();
-
-            } catch (IOException | ClassNotFoundException e1) {
-                log.error("recieve error");
-            }*/
+            }
         }
 
 
     }
 
+    private void run(ClientApp app) {
+
+    }
+
+    private Client getUser() {
+        return user;
+    }
+
     public static void main(String[] args) throws IOException, ClassNotFoundException {
+
         ClientApp app = new ClientApp();
+        //   app.listen();
+
         //TODO как вызвать app.listen(); если клиент создается только после логина, a listen() юзает user??
 
     }
