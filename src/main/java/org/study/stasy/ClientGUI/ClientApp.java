@@ -21,10 +21,9 @@ import static org.study.stasy.app.Server.getUserList;
  */
 public class ClientApp extends JFrame {
     private static Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
-    private JPanel startPane;
 
     private String host = "localhost";
-    private String port = "6650";
+    private String port = "6649";
     private JPanel rootPanel;
     private Client user = null;
     private String userName;
@@ -37,9 +36,9 @@ public class ClientApp extends JFrame {
 
     private JTextField portFiels;
     private JTextField hostField;
-    private static final String EXIT_MSG = "@exit";
     private static final String STOP_MSG = "@exit";
-
+    private static final String EXIT_MSG = "@exit";
+    private boolean flag = false; //если тру- подлючен к серверу
 
     private ClientApp() {
         try {
@@ -47,6 +46,19 @@ public class ClientApp extends JFrame {
         } catch (IOException | ClassNotFoundException e) {
             log.error("constructor error");
         }
+    }
+
+
+    /**
+     * if connection with server is failed call this method from Client
+     */
+    public void connectionFailed() {
+        // loginButton.setEnabled(true);
+        loginButton.setText("Connect");
+        sendButton.setEnabled(true);
+        flag = false;
+        JOptionPane.showMessageDialog(error_frame, "Connection is failed");
+
     }
 
     {
@@ -74,6 +86,7 @@ public class ClientApp extends JFrame {
         public void actionPerformed(ActionEvent e) {
             doConnection();
         }
+
     }
 
     private void mainWindow() throws IOException, ClassNotFoundException {
@@ -128,7 +141,6 @@ public class ClientApp extends JFrame {
         loginPanel.add(systemData, startLeft);
         loginPanel.add(clientData, startRight);
 
-        setVisible(true);
 
         rootPanel = new JPanel();
         rootPanel.setLayout(new BorderLayout());
@@ -140,7 +152,6 @@ public class ClientApp extends JFrame {
         this.setVisible(true);
 
         JPanel southPanel = new JPanel(); //нижняя
-        //   this.add(BorderLayout.SOUTH, southPanel);
         southPanel.setBackground(Color.BLUE);
         southPanel.setLayout(new GridBagLayout());
 
@@ -184,15 +195,12 @@ public class ClientApp extends JFrame {
         right.weightx = 2;
         right.weighty = 2;
 
-        // messageBox.setSize(200, 30);
         southPanel.add(messageBox, left);
         southPanel.add(sendButton, right);
 
         rootPanel.add(BorderLayout.SOUTH, southPanel);
         rootPanel.add(BorderLayout.NORTH, loginPanel);
         this.add(rootPanel);
-
-        // chatPane.addInputMethodListener(new ); добавить листенер на панель для приема сообщений?
 
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -216,6 +224,7 @@ public class ClientApp extends JFrame {
 
     private void doConnection() {
         if (loginButton.getText().equals("Connect")) {
+            sendButton.setEnabled(false);
             flag = true;
             loginButton.setText("Reset");
             userName = loginField.getText();
@@ -227,7 +236,7 @@ public class ClientApp extends JFrame {
             }
 
             try {
-                user = new Client(host, port, userName);
+                user = new Client(host, port, userName, this);
 
             } catch (ClientException e1) {
                 log.error("", e1);
@@ -236,6 +245,7 @@ public class ClientApp extends JFrame {
             }
         } else {
             try {
+                sendButton.setEnabled(true);
                 flag = false;
                 user.shutDownClient();
 
@@ -248,54 +258,38 @@ public class ClientApp extends JFrame {
 
     }
 
-    JFrame frame;
+    private JFrame error_frame; //фрейм вывода ошибок
 
     private void sendMsg() throws IOException, ClientException {
         if (loginButton.getText().equals("Connect")) {
-            JOptionPane.showMessageDialog(frame, "U r not connected to the server");
+            JOptionPane.showMessageDialog(error_frame, "U r not connected to the server");
         }
         String text = messageBox.getText();
         user.sendMsg(text);
+        ChatMessage userMsg = new ChatMessage(userName, text);
         if (!Objects.equals(text, STOP_MSG)) {
-            printMsg(text);
+            printMsg(userMsg);
             messageBox.setText("");
         } else {
             loginButton.setText("Connect");
             user.shutDownClient();
-            JOptionPane.showMessageDialog(frame, "Bye bye!");
+            JOptionPane.showMessageDialog(error_frame, "Bye bye!");
         }
     }
 
-    //вывод сообщения отправителя на экран
-    void printMsg(String text) {
-        chatPane.setText(String.format("%s\n[%s] [Я]: \t%s", chatPane.getText(), LocalDateTime.now(), text));
+
+    /**
+     * вывод сообщения отправителя на экран
+     * called from ButtonActionSendMsg and Client's private class "Listen to server"
+     *
+     * @param message
+     */
+    public void printMsg(ChatMessage message) {
+        chatPane.setText(String.format("%s\n%s [%s]: \t%s", chatPane.getText(),
+                LocalDateTime.now(), message.getUserName(), message.getMessage())); //todo мб есть что-то типо append(msg)
         chatPane.setCaretPosition(chatPane.getText().length());
     }
 
-    boolean flag = false;
-
-
-    public void listen() {
-        try {
-            ChatMessage s;
-
-            ObjectInputStream objIn = (ObjectInputStream) user.getInputStream();
-            while (flag) { //пока подключен к серверу читать входящие сообщения и выводить их на экран
-                s = (ChatMessage) objIn.readObject();
-                chatPane.setText(String.format("%s\n[%s][%s]: \t%s", chatPane.getText(),
-                        LocalDateTime.now(), s.getUserName(), s.getMessage()));
-                chatPane.setCaretPosition(chatPane.getText().length());
-            }
-            objIn.close();
-            try {
-                user.shutDownClient();
-            } catch (Exception e) {
-                log.error("client is not shut down");
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("error of listening messages");
-        }
-    }
 
     class ButtonActionSendMsg implements ActionListener {
         @Override
@@ -306,21 +300,12 @@ public class ClientApp extends JFrame {
                 log.error("sendmsg error", e);
             } catch (ClientException e1) {
                 e1.printStackTrace();
-            }/*
-            try {
-                recieveConfirm();
-            } catch (IOException | ClassNotFoundException e1) {
-                log.error("recieve error");
-            }*/
+            }
         }
-
-
     }
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
-        ClientApp app = new ClientApp();
-        //TODO как вызвать app.listen(); если клиент создается только после логина, a listen() юзает user??
-
+    public static void main(String[] args) {
+        new ClientApp();
     }
 
 }

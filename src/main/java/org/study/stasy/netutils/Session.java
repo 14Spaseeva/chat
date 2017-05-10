@@ -27,7 +27,6 @@ public class Session implements Stoppable {
 
     private static final String CTRL_MSG = "ok";
     private static final String STOP_MSG = "@exit";
-    private static final String CONFIRM_MSG = "#recieved";
     private static final String HELLO_MSG = "#I'm fine";
 
     private Socket fromClientSocket;
@@ -39,7 +38,6 @@ public class Session implements Stoppable {
 
     private final Object lock = new Object();
     private String userName;
-    private ChatMessage chatMessage;
 
     Session(Socket socket, MessageHandler messageHandler) {
 
@@ -92,21 +90,18 @@ public class Session implements Stoppable {
                 receivedMsg = chatMessage.getMessage();
                 log.info("[{}]", receivedMsg);
                 messageHandler.handle(chatMessage, this);
-                //  sendConfirmMsg();
             }
-            //   }
-            stop();
-        } catch (IOException | ClassNotFoundException | SessionException e) {
-            e.printStackTrace();
+        } catch (IOException | ClassNotFoundException e) {
+            try {
+                stop();
+            } catch (SessionException e1) {
+                e1.printStackTrace();
+            }
         }
 
 
     }
 
- /*   private void sendConfirmMsg() throws IOException {
-        ChatMessage confirmMsg = new ChatMessage(CONFIRM_MSG);
-        objOut.writeObject(confirmMsg);
-    }*/
 
     private void pingClient() throws IOException, ClassNotFoundException {
         ChatMessage ctrlMessage = new ChatMessage(CTRL_MSG);
@@ -120,14 +115,8 @@ public class Session implements Stoppable {
             log.error("Hello_msg == [{}]", helloMsg.getMessage());
         } else {
             log.info("[{}] is connected", helloMsg.getUserName());
-          /*  broadcast(this, getUserList().getClientsList(),
-                    new ChatMessage(String.format("[%] [%] is connected",
-                            LocalDateTime.now(), helloMsg.getUserName())));*/
             getUserList().addUser(userName, fromClientSocket, objOut, objIn);
-
-
             broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[%s] is connected", userName)));
-
         }
         try {
         } catch (Exception e) {

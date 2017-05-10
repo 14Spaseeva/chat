@@ -3,15 +3,12 @@ package org.study.stasy.app;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.event.KeyAdapter;
 import java.io.*;
 import java.net.Socket;
 
 import org.study.stasy.ChatMessage;
 import org.study.stasy.ClientGUI.ClientApp;
 import org.study.stasy.Exeptions.*;
-
-import static java.lang.System.out;
 
 public class Client {
     private static Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
@@ -25,7 +22,7 @@ public class Client {
     private static final String HELLO_MSG = "#I'm fine";
     private ClientApp clientApp;
 
-    public Client(String host, String port, String name) throws ClientException {
+    public Client(String host, String port, String name, ClientApp app) throws ClientException {
 
         log.info("Connection...");
         try {
@@ -33,8 +30,10 @@ public class Client {
             fromServer = new Socket(host, Integer.parseInt(port));
             objOut = new ObjectOutputStream(this.fromServer.getOutputStream());
             objIn = new ObjectInputStream(this.fromServer.getInputStream());
+            clientApp = app;
             getCtrlMsg();
             sendHelloMsg();
+            new ServerListener().start();
 
         } catch (IOException e) {
             throw new ClientException("Client constructor: Socket error:");
@@ -53,9 +52,6 @@ public class Client {
     }
 
 
-    public String getUserName() {
-        return userName;
-    }
 
     private void getCtrlMsg() throws ClientException, IOException, ClassNotFoundException {
         ChatMessage fromServerCtrlMsg = (ChatMessage) objIn.readObject();
@@ -105,7 +101,6 @@ public class Client {
     }
 
 
-
     private void sendHelloMsg() throws IOException {
         ChatMessage confirmMsg = new ChatMessage(userName, HELLO_MSG);
         objOut.writeObject(confirmMsg);
@@ -137,17 +132,35 @@ public class Client {
     }
 
 
-
-
     public static void main(String[] args) {
 
         try {
 
-            Client client = new Client(args[0], args[1], args[2]);
+            Client client = new Client(args[0], args[1], args[2], null);
             client.sendMessages();
             client.shutDownClient();
         } catch (ClientException e) {
             log.error("Client can't be created: ", e);
+        }
+    }
+
+    class ServerListener extends Thread {
+        public void run() {
+            while (true) {
+                try {
+                    ChatMessage msg = (ChatMessage) objIn.readObject();
+                    if (clientApp == null) {
+                        System.out.println(msg);
+                    } else {
+                        clientApp.printMsg(msg);
+                    }
+                } catch ( IOException  e) {
+                    if (clientApp != null)
+                        clientApp.connectionFailed();
+                }
+                catch (ClassNotFoundException e2) {
+                }
+            }
         }
     }
 
