@@ -32,6 +32,7 @@ public class Server {
             classMHFactory = Class.forName(className);
             mHFactory = (MessageHandlerFactory) classMHFactory.newInstance();
             channel = new Channel<>(maxSessionNum);
+            chatHistory= new ChatHistory();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             log.error("{}", e);
         }

@@ -25,17 +25,14 @@ public class Client {
     private static final String HELLO_MSG = "#I'm fine";
     private ClientApp clientApp;
 
-    public Client(String host, String port) throws ClientException {
+    public Client(String host, String port, String name) throws ClientException {
 
         log.info("Connection...");
         try {
-
-
+            userName = name;
             fromServer = new Socket(host, Integer.parseInt(port));
             objOut = new ObjectOutputStream(this.fromServer.getOutputStream());
             objIn = new ObjectInputStream(this.fromServer.getInputStream());
-            userName = userName = String.format("[%s:%s]", fromServer.getInetAddress().getHostAddress(),
-                    Integer.toString(fromServer.getPort()));
             getCtrlMsg();
             sendHelloMsg();
 
@@ -86,7 +83,7 @@ public class Client {
      */
     private void sendMessages() throws ClientException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        out.println("Dear User, to exit this app use command @exit");
+        System.out.println("Dear User, to exit this app use command @exit");
         String clientMsg = "";
         try {
             while (!clientMsg.equals(STOP_MSG)) {
@@ -95,7 +92,9 @@ public class Client {
                 objOut.writeObject(chatMessage);
                 log.info("sent! ");
                 ChatMessage confirmMsg = (ChatMessage) objIn.readObject();
-                log.info(confirmMsg.getMessage());
+                System.out.println(confirmMsg.getMessage());
+                log.info("got! ");
+
             }
             bufferedReader.close();
         } catch (IOException e) {
@@ -104,6 +103,8 @@ public class Client {
             e.printStackTrace();
         }
     }
+
+
 
     private void sendHelloMsg() throws IOException {
         ChatMessage confirmMsg = new ChatMessage(userName, HELLO_MSG);
@@ -131,15 +132,24 @@ public class Client {
         return objOut;
     }
 
-    public Object getIutputStream() {
+    public Object getInputStream() {
         return objIn;
     }
 
-    public ClientApp getClientApp() {
-        return clientApp;
+
+
+
+    public static void main(String[] args) {
+
+        try {
+
+            Client client = new Client(args[0], args[1], args[2]);
+            client.sendMessages();
+            client.shutDownClient();
+        } catch (ClientException e) {
+            log.error("Client can't be created: ", e);
+        }
     }
 
-    public void setClientApp(ClientApp clientApp) {
-        this.clientApp = clientApp;
-    }
+
 }

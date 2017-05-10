@@ -2,7 +2,6 @@ package org.study.stasy.netutils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.study.stasy.ChatHistory;
 import org.study.stasy.ChatMessage;
 import org.study.stasy.Exeptions.SessionException;
 import org.study.stasy.app.Client;
@@ -15,7 +14,6 @@ import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-import static org.study.stasy.app.Server.getChatHistory;
 import static org.study.stasy.app.Server.getUserList;
 
 
@@ -42,7 +40,6 @@ public class Session implements Stoppable {
     private final Object lock = new Object();
     private String userName;
     private ChatMessage chatMessage;
-    private ChatHistory chatHistory;
 
     Session(Socket socket, MessageHandler messageHandler) {
 
@@ -71,9 +68,7 @@ public class Session implements Stoppable {
             dOS.writeUTF(CTRL_MSG);
             log.info("ctrl msg is sent");
             String receivedMsg = "";
-
             while (!receivedMsg.equals(STOP_MSG)) {
-
                 receivedMsg = dIS.readUTF();
                 messageHandler.handle(clName, receivedMsg);
                 dOS.writeUTF(CONFIRM_MSG);
@@ -96,14 +91,10 @@ public class Session implements Stoppable {
                 chatMessage = (ChatMessage) objIn.readObject();
                 receivedMsg = chatMessage.getMessage();
                 log.info("[{}]", receivedMsg);
-                if (receivedMsg != STOP_MSG) {
-                    getChatHistory().addMessage(chatMessage);
-                    messageHandler.handle(chatMessage, this);
-                    //  sendConfirmMsg();
-                }
+                messageHandler.handle(chatMessage, this);
+                //  sendConfirmMsg();
             }
             //   }
-            getUserList().deleteUser(userName);
             stop();
         } catch (IOException | ClassNotFoundException | SessionException e) {
             e.printStackTrace();
@@ -115,7 +106,6 @@ public class Session implements Stoppable {
  /*   private void sendConfirmMsg() throws IOException {
         ChatMessage confirmMsg = new ChatMessage(CONFIRM_MSG);
         objOut.writeObject(confirmMsg);
-
     }*/
 
     private void pingClient() throws IOException, ClassNotFoundException {
@@ -127,23 +117,23 @@ public class Session implements Stoppable {
         helloMsg = (ChatMessage) objIn.readObject();
         userName = helloMsg.getUserName();
         if (!helloMsg.getMessage().equals(HELLO_MSG)) {
-            getChatHistory().addMessage(helloMsg);
             log.error("Hello_msg == [{}]", helloMsg.getMessage());
         } else {
-            try {
-                objOut.writeObject(getChatHistory());
-                log.info("[{}] is connected", helloMsg.getUserName());
-                messageHandler.handle(new ChatMessage(String.format("[%s] is connected", userName)), this);
+            log.info("[{}] is connected", helloMsg.getUserName());
+          /*  broadcast(this, getUserList().getClientsList(),
+                    new ChatMessage(String.format("[%] [%] is connected",
+                            LocalDateTime.now(), helloMsg.getUserName())));*/
+            getUserList().addUser(userName, fromClientSocket, objOut, objIn);
 
-            } catch (Exception e) {
-                log.error("Session ping addUser :{}", e);
-            }
+
+            broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[%s] is connected", userName)));
+
         }
-        getUserList().addUser(userName, fromClientSocket, objOut, objIn);
-        messageHandler.handle(ctrlMessage, this);
-
+        try {
+        } catch (Exception e) {
+            log.error("Session ping addUser :{}", e);
+        }
     }
-
 
     public void broadcast(Session session, ArrayList<Client> clientsArrayList, ChatMessage message) {
         try {
@@ -151,12 +141,12 @@ public class Session implements Stoppable {
             for (Client client : clientsArrayList) {
                 objOut = (ObjectOutputStream) client.getOutputStream();
                 objOut.writeObject(message);
-                log.info("broadcasting to {} completed", client.getUserName());
+
             }
         } catch (SocketException e) {
             log.info("[{}] is disconnected", userName);
             getUserList().deleteUser(userName);
-            messageHandler.handle(new ChatMessage(String.format("[%s] is disconnected", userName)), this);
+            this.broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -176,8 +166,8 @@ public class Session implements Stoppable {
                     // dOS.writeUTF(String.format("GOOD BYE, DEAR [%s]"));
                     assert fromClientSocket != null;
                     log.info("[{}] is disconnected", userName);
-                    messageHandler.handle(new ChatMessage(String.format("[%s] is disconnected !!!", userName)), this);
                     getUserList().deleteUser(userName);
+                    this.broadcast(this, getUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
 
                     fromClientSocket.shutdownInput();
                     fromClientSocket.shutdownOutput();

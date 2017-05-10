@@ -2,9 +2,7 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.study.stasy.Exeptions.ClientException;
 import org.study.stasy.app.Client;
-import org.study.stasy.netutils.Session;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 
 /**
  * Created by ASPA on 04.05.2017.
@@ -25,7 +22,6 @@ public class UserList {
 
     public void addUser(String userName, Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
         try {
-            log.info("[{}] connected", userName);
             if (!this.onlineUsers.containsKey(userName)) {
                 this.onlineUsers.put(userName, new Client(socket, oos, ois));
 
@@ -36,14 +32,17 @@ public class UserList {
                     i++;
                 }
                 this.onlineUsers.put(userName, new Client(socket, oos, ois));
+                log.info("[{}] is added", userName);
+
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("user can't be added to the userList");
         }
     }
 
     public void deleteUser(String login) {
         this.onlineUsers.remove(login);
+        log.info("user [{}] is deleted from userList", login);
     }
 
     public String[] getUsers() {
@@ -53,9 +52,9 @@ public class UserList {
     public ArrayList<Client> getClientsList() {
         ArrayList<Client> clientsList = new ArrayList<>(this.onlineUsers.entrySet().size());
         String s = "";
-        for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) {
+        for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) { //todo не работает
             clientsList.add(m.getValue());
-            System.out.println(m.getKey());
+            System.out.println(m.getKey()); //вывод юзера на экран
             s = s + m.getKey();
         }
 
