@@ -53,7 +53,6 @@ public class ClientApp extends JFrame {
      * if connection with server is failed call this method from Client
      */
     public void connectionFailed() {
-        // loginButton.setEnabled(true);
         loginButton.setText("Connect");
         sendButton.setEnabled(true);
         flag = false;
@@ -268,13 +267,19 @@ public class ClientApp extends JFrame {
         user.sendMsg(text);
         ChatMessage userMsg = new ChatMessage(userName, text);
         if (!Objects.equals(text, STOP_MSG)) {
-            printMsg(userMsg);
+            printMytMsg(userMsg);
             messageBox.setText("");
         } else {
             loginButton.setText("Connect");
             user.shutDownClient();
             JOptionPane.showMessageDialog(error_frame, "Bye bye!");
         }
+    }
+
+    private void printMytMsg(ChatMessage userMsg) {
+        chatPane.setText(String.format("%s\n%s [Я]: \t%s", chatPane.getText(),
+                LocalDateTime.now(),  userMsg.getMessage())); //todo мб есть что-то типо append(msg)
+        chatPane.setCaretPosition(chatPane.getText().length());
     }
 
 
@@ -284,10 +289,12 @@ public class ClientApp extends JFrame {
      *
      * @param message
      */
-    public void printMsg(ChatMessage message) {
-        chatPane.setText(String.format("%s\n%s [%s]: \t%s", chatPane.getText(),
-                LocalDateTime.now(), message.getUserName(), message.getMessage())); //todo мб есть что-то типо append(msg)
-        chatPane.setCaretPosition(chatPane.getText().length());
+    public void printReceivedMsg(ChatMessage message) {
+        if (message.getUserName() != userName) {
+            chatPane.setText(String.format("%s\n%s [%s]: \t%s", chatPane.getText(),
+                    LocalDateTime.now(), message.getUserName(), message.getMessage())); //todo мб есть что-то типо append(msg)
+            chatPane.setCaretPosition(chatPane.getText().length());
+        }
     }
 
 

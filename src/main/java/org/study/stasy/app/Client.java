@@ -26,6 +26,8 @@ public class Client {
 
         log.info("Connection...");
         try {
+
+
             userName = name;
             fromServer = new Socket(host, Integer.parseInt(port));
             objOut = new ObjectOutputStream(this.fromServer.getOutputStream());
@@ -152,7 +154,7 @@ public class Client {
                     if (clientApp == null) {
                         System.out.println(msg);
                     } else {
-                        clientApp.printMsg(msg);
+                        clientApp.printReceivedMsg(msg);
                     }
                 } catch ( IOException  e) {
                     if (clientApp != null)
