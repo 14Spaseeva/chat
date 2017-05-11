@@ -45,14 +45,10 @@ public class UserList {
         log.info("user [{}] is deleted from userList", login);
     }
 
-    public String[] getUsers() {
-        return this.onlineUsers.keySet().toArray(new String[0]);
-    }
-
     public ArrayList<Client> getClientsList() {
         ArrayList<Client> clientsList = new ArrayList<>(this.onlineUsers.entrySet().size());
         String s = "";
-        for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) { //todo не работает
+        for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) {
             clientsList.add(m.getValue());
             System.out.println(m.getKey()); //вывод юзера на экран
             s = s + m.getKey();

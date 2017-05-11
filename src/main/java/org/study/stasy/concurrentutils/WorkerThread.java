@@ -44,7 +44,6 @@ public class WorkerThread implements Stoppable {
             while (status) {
                 while (currentTask == null) {
                     try {
-                       // log.info("WorkerTread run(): wait");
                         lock.wait();
                     } catch (InterruptedException e) {
                         log.error("ошибка ожидания задач на выполнение");
@@ -71,10 +70,8 @@ public class WorkerThread implements Stoppable {
     void execute(Stoppable task) throws WorkerThreadExсeption {
         synchronized (lock) {
             if (currentTask != null) throw new WorkerThreadExсeption("Method execute: currentTask != null");
-            log.info("Worker thread execute : новая задача назначена");
             currentTask = task;
             lock.notifyAll();
-            log.info("Worker thread execute : уведомлены");
 
         }
     }

@@ -65,14 +65,12 @@ public class Channel<T> {
         synchronized (lock) {
             while (queue.isEmpty()) {
                 try {
-                    log.info("Очередь пуста, ожидание");
                     lock.wait();
                 } catch (InterruptedException e) {
                     log.error("Ошибка ожидания");
                 }
             }
             lock.notifyAll();
-            log.info("пробудили потоки, которые поставлены в ожидание при получении элементов из очереди, взяли первый обьяект из очереди");
             return queue.removeFirst();
         }
     }

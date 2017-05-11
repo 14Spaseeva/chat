@@ -20,7 +20,7 @@ public class ChatMessage implements Serializable //классы которые �
     }
 
     public ChatMessage(String message) {
-        this.userName="[server]";
+        this.userName="server";
         time = LocalDateTime.now();
         this.message = message;
     }
@@ -33,31 +33,16 @@ public class ChatMessage implements Serializable //классы которые �
                 && this.getTime().equals(((ChatMessage) obj).getTime()));
     }
 
-//hashcode
-
-
     private LocalDateTime getTime() {
         return time;
-    }
-
-    public void setTime(LocalDateTime time) {
-        this.time = time;
     }
 
     public String getUserName() {
         return userName;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
     public String getMessage() {
         return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
 

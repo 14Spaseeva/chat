@@ -16,7 +16,6 @@ import static org.study.stasy.app.Server.serverUserList;
 
 
 /**
- * TODO A 127.255.255.255 - разослать всем (class A) ??
  * /**
  * Input/ output streams for communication between Client and Server
  */
@@ -82,15 +81,13 @@ public class Session implements Stoppable {
         try {
             ChatMessage ctrlMessage = new ChatMessage(CTRL_MSG);
             objOutForMyClient.writeObject(ctrlMessage);
-            log.info("ctrl msg is sent");
 
             ChatMessage helloMsg;
             helloMsg = (ChatMessage) objIn.readObject();
-            log.info("hello msg is received");
 
             userName = helloMsg.getUserName();
             if (!helloMsg.getMessage().equals(HELLO_MSG)) {
-                log.error("Hello_msg == [{}]", helloMsg.getMessage());
+                throw  new SessionException("Wrong value: Hello_msg ");
             } else {
                 log.info("[{}] is connected", helloMsg.getUserName());
                 serverUserList().addUser(userName, fromClientSocket, objOutForMyClient, objIn);
@@ -98,13 +95,14 @@ public class Session implements Stoppable {
             }
         } catch (IOException | ClassNotFoundException e) {
             log.error(" stream's error in ping client", e);
+        } catch (SessionException e1) {
+            log.error("ping is failed: ", e1);
         }
 
     }
 
     public void broadcast(Session session, ArrayList<Client> clientsArrayList, ChatMessage message) {
         try {
-            log.info("broadcasting..");
             ObjectOutputStream objOut;
 
             for (Client client : clientsArrayList) {

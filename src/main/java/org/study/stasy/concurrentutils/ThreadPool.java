@@ -22,7 +22,6 @@ import java.util.LinkedList;
  * allWorkers - база работников
  * maxSize - макс. число свободных работников
  */
-//TODO Sigleton?
 
 public class ThreadPool {
     private static Logger log = LoggerFactory.getLogger("threadPool");
@@ -53,14 +52,12 @@ public class ThreadPool {
         synchronized (lock) {
             if (freeWorkers.getSize() == 0) {
                 if (allWorkers.size() < maxSize) {
-                    log.info("создается новый worker");
                     WorkerThread worker = new WorkerThread(this);
                     allWorkers.addLast(worker);
                     freeWorkers.put(worker);
                 }
             }
             try {
-                log.info("Берем первый в очереди экземпляр session и запускаем");
                 ((WorkerThread) freeWorkers.get()).execute(task);
             } catch (WorkerThreadExсeption e) {
                 log.error(" Oops!:{}", e);
@@ -76,7 +73,6 @@ public class ThreadPool {
     }
 
     public void stop() throws TreadPoolException {
-        log.info("ThreadPool stop()");
         while (allWorkers.size() > 0) {
             try {
                 allWorkers.removeFirst().stop();
@@ -84,6 +80,7 @@ public class ThreadPool {
                 throw new TreadPoolException("ThreadPool.stop() is failed ");
             }
         }
+        log.info("TreadPool is stopped");
     }
 
 }

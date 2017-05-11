@@ -24,9 +24,7 @@ public class Dispatcher implements Stoppable {
     public void run() {
         while (status) {
             Stoppable task = channel.get();
-            log.info("Dispatcher run(): достали из очереди task = {}, \n threadPool= {}", task, threadPool);
             threadPool.execute(task);
-            log.info("Dispatcher run() выполнен execute ");
         }
     }
 

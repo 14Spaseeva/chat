@@ -42,9 +42,6 @@ public class Host implements Stoppable {
         try {
             while (status) {
                 Socket clientSocket = serverSocket.accept(); // заставляем хост ждать подключений
-                //Как только клиент подключается - сокет для клиента сразу же создается. (clientSocket.isconnected iscreated is bound = true)
-                // Исполнение программы зависает в этом месте, пока клиент не подключится
-                log.info("Create new session");
                 Session newSession= new Session(clientSocket, messageHandler);
                 channel.put(newSession);
             }
@@ -64,7 +61,6 @@ public class Host implements Stoppable {
 
     @Override
     public void stop() {
-        log.info("host stop()");
 
         if (status) {
             status = false;
@@ -72,7 +68,7 @@ public class Host implements Stoppable {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                log.error("Oops! {}", e);
+                log.error("host can't be stopped", e);
                 return;
             }
             log.info("host is stopped");

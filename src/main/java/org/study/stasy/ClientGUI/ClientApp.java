@@ -143,7 +143,7 @@ public class ClientApp extends JFrame {
         portFiels.setEditable(false);
 
         JPanel clientData = new JPanel(new GridBagLayout());
-        clientData.setBackground(Color.lightGray);
+        // clientData.setBackground(Color.lightGray);
         clientData.setLayout(new GridBagLayout());
 
 
@@ -212,7 +212,6 @@ public class ClientApp extends JFrame {
         chatPane = new JTextPane();
         chatPane.setEditable(false);
 
-        //   this.add(new JScrollPane(chatPane), BorderLayout.CENTER);
         this.setResizable(false);
         rootPanel.add(new
                 JScrollPane(chatPane), BorderLayout.CENTER);
