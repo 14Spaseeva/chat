@@ -62,7 +62,9 @@ public class Session implements Stoppable {
                 chatMessage = (ChatMessage) objIn.readObject();
                 receivedMsg = chatMessage.getMessage();
                 log.info("[{}]", receivedMsg);
-                messageHandler.handle(chatMessage, this);
+                if (!receivedMsg.equals(STOP_MSG))
+                    messageHandler.handle(chatMessage, this);
+                else broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] left chat room", userName)));;
             }
         } catch (IOException | ClassNotFoundException e) {
             log.error("error of readObject messages in Session.run()");
@@ -87,7 +89,7 @@ public class Session implements Stoppable {
 
             userName = helloMsg.getUserName();
             if (!helloMsg.getMessage().equals(HELLO_MSG)) {
-                throw  new SessionException("Wrong value: Hello_msg ");
+                throw new SessionException("Wrong value: Hello_msg ");
             } else {
                 log.info("[{}] is connected", helloMsg.getUserName());
                 serverUserList().addUser(userName, fromClientSocket, objOutForMyClient, objIn);

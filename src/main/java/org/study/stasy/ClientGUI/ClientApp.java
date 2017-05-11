@@ -8,6 +8,8 @@ import org.study.stasy.Exeptions.ClientException;
 import org.study.stasy.app.Client;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -28,16 +30,20 @@ public class ClientApp extends JFrame {
     private JButton sendButton;
     private JTextField messageBox; //многострочное текстовое поле
     private JTextPane chatPane;  //текстовый редактор со стилям
-
     private JTextField loginField;
     private JButton loginButton;
-
+    private JCheckBox checkBox;
     private JTextField portFiels;
     private JTextField hostField;
     private static final String EXIT_MSG = "@exit";
+    private static String unckecked = "Unckecked";
+    private static String checked = "Checked";
+    private JMenuBar menuBar;
 
     private ClientApp() {
         try {
+
+            //   this.setIconImage(new ImageIcon("D:\\idea projects\\chat\\src\\main\\java\\org\\study\\stasy\\images\\1457631818_send.png"));
             mainWindow();
         } catch (IOException | ClassNotFoundException e) {
             log.error("constructor error");
@@ -49,9 +55,9 @@ public class ClientApp extends JFrame {
      * if connection with server is failed call this method from Client
      */
     public void connectionFailed() {
-
-
         loginButton.setText("Connect");
+        checkBox.setSelected(false);
+        checkBox.setEnabled(true);
         loginField.setEditable(true);
         sendButton.setEnabled(true);
         try {
@@ -59,8 +65,6 @@ public class ClientApp extends JFrame {
         } catch (IOException e) {
             log.error("user can't send exit-msg");
         }
-        // JOptionPane.showMessageDialog(error_frame, "Connection is failed");
-
     }
 
     {
@@ -98,6 +102,8 @@ public class ClientApp extends JFrame {
                         "Nick Name is invalid", JOptionPane.ERROR_MESSAGE);
 
             } else {
+                checkBox.setEnabled(false);
+                checkBox.setSelected(false);
                 sendButton.setEnabled(true);
                 loginButton.setText("Reset");
                 userName = loginField.getText();
@@ -135,42 +141,73 @@ public class ClientApp extends JFrame {
 
 
         loginButton = new JButton("Connect");
+
         loginButton.addActionListener(new loginButtonListener());
 
-        hostField = new JTextField(host, 10);
+        hostField = new JTextField(host, 5);
         hostField.setEditable(false);
-        portFiels = new JTextField(port, 10);
+        portFiels = new JTextField(port, 5);
         portFiels.setEditable(false);
 
-        JPanel clientData = new JPanel(new GridBagLayout());
-        // clientData.setBackground(Color.lightGray);
-        clientData.setLayout(new GridBagLayout());
+        checkBox = new JCheckBox("Edit host/port", false);
+        checkBox.setHorizontalTextPosition(SwingConstants.LEFT);
+  /*      checkBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!checkBox.isSelected()) {
+                    portFiels.setEditable(true);
+                    hostField.setEditable(true);
+                } else {
+                    portFiels.setEditable(false);
+                    hostField.setEditable(false);
+                }
+            }
 
-
+        });*/
+        checkBox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (checkBox.isSelected()) {
+                    portFiels.setEditable(true);
+                    hostField.setEditable(true);
+                } else {
+                    portFiels.setEditable(false);
+                    hostField.setEditable(false);
+                }
+            }
+        });
         GridBagConstraints startRight = new GridBagConstraints();
         startRight.insets = new Insets(0, 0, 0, 10);
-
         startRight.anchor = GridBagConstraints.EAST;
-
-        GridBagConstraints startLeft = new GridBagConstraints();
-        startLeft.insets = new Insets(0, 10, 0, 10);
-
-        startLeft.anchor = GridBagConstraints.WEST;
-        startRight.fill = GridBagConstraints.VERTICAL;
+        startRight.fill = GridBagConstraints.HORIZONTAL;
         startRight.gridwidth = GridBagConstraints.REMAINDER;
 
 
+        GridBagConstraints startCenter = new GridBagConstraints();
+        startCenter.insets = new Insets(0, 10, 0, 10);
+        startCenter.anchor = GridBagConstraints.PAGE_START;
+
+
+        GridBagConstraints startLeft = new GridBagConstraints();
+        startLeft.insets = new Insets(0, 10, 0, 10);
+        startLeft.anchor = GridBagConstraints.WEST;
+
+
+        JPanel clientData = new JPanel(new GridBagLayout());
+        clientData.setLayout(new GridBagLayout());
         clientData.add(loginField, startLeft);
         clientData.add(loginButton, startRight);
 
+
         JPanel systemData = new JPanel(new GridBagLayout());
-        systemData.add(hostField, startLeft);
+        systemData.setLayout(new GridBagLayout());
+        systemData.add(checkBox, startLeft);
+        systemData.add(hostField, startCenter);
         systemData.add(portFiels, startRight);
 
+
         JPanel loginPanel = new JPanel(new GridBagLayout());
-
-
-        loginPanel.add(systemData, startLeft);
+        loginPanel.add(systemData, startCenter);
         loginPanel.add(clientData, startRight);
 
 
@@ -181,7 +218,6 @@ public class ClientApp extends JFrame {
         this.setLocation(700, 400);
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.setVisible(true);
 
         JPanel southPanel = new JPanel(); //нижняя
         southPanel.setBackground(Color.lightGray);
@@ -212,7 +248,7 @@ public class ClientApp extends JFrame {
         chatPane = new JTextPane();
         chatPane.setEditable(false);
 
-        this.setResizable(false);
+        this.setResizable(true);
         rootPanel.add(new
                 JScrollPane(chatPane), BorderLayout.CENTER);
         GridBagConstraints left = new GridBagConstraints();
