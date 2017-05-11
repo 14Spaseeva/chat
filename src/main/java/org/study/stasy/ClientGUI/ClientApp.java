@@ -14,8 +14,6 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-import static org.study.stasy.app.Server.getUserList;
-
 /**
  * Created by ASPA on 03.05.2017.
  */
@@ -23,7 +21,7 @@ public class ClientApp extends JFrame {
     private static Logger log = LoggerFactory.getLogger(Client.class.getSimpleName());
 
     private String host = "localhost";
-    private String port = "6649";
+    private String port = "6647";
     private JPanel rootPanel;
     private Client user = null;
     private String userName;
@@ -36,9 +34,7 @@ public class ClientApp extends JFrame {
 
     private JTextField portFiels;
     private JTextField hostField;
-    private static final String STOP_MSG = "@exit";
     private static final String EXIT_MSG = "@exit";
-    private boolean flag = false; //если тру- подлючен к серверу
 
     private ClientApp() {
         try {
@@ -53,10 +49,17 @@ public class ClientApp extends JFrame {
      * if connection with server is failed call this method from Client
      */
     public void connectionFailed() {
+
+
         loginButton.setText("Connect");
+        loginField.setEditable(true);
         sendButton.setEnabled(true);
-        flag = false;
-        JOptionPane.showMessageDialog(error_frame, "Connection is failed");
+        try {
+            user.sendMsg(EXIT_MSG);
+        } catch (IOException e) {
+            log.error("user can't send exit-msg");
+        }
+        // JOptionPane.showMessageDialog(error_frame, "Connection is failed");
 
     }
 
@@ -88,6 +91,36 @@ public class ClientApp extends JFrame {
 
     }
 
+    private void doConnection() {
+        if (loginButton.getText().equals("Connect")) {
+            if (loginField.getText().length() < 4) {
+                JOptionPane.showMessageDialog(loginButton, "Nick name should contain no less, then 4 symbols",
+                        "Nick Name is invalid", JOptionPane.ERROR_MESSAGE);
+
+            } else {
+                sendButton.setEnabled(true);
+                loginButton.setText("Reset");
+                userName = loginField.getText();
+                loginField.setEditable(false);
+                host = hostField.getText();
+                port = portFiels.getText();
+
+
+                try {
+                    user = new Client(host, port, userName, this);
+
+                } catch (ClientException e1) {
+                    log.error("", e1);
+                    JOptionPane.showMessageDialog(loginButton, "Please, check host & port",
+                            "Connection i failed", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else {
+            connectionFailed();
+        }
+
+    }
+
     private void mainWindow() throws IOException, ClassNotFoundException {
         loginField = new JTextField("username", 15);
         loginField.addKeyListener(new KeyAdapter() {
@@ -110,7 +143,7 @@ public class ClientApp extends JFrame {
         portFiels.setEditable(false);
 
         JPanel clientData = new JPanel(new GridBagLayout());
-        clientData.setBackground(Color.DARK_GRAY);
+        clientData.setBackground(Color.lightGray);
         clientData.setLayout(new GridBagLayout());
 
 
@@ -151,7 +184,7 @@ public class ClientApp extends JFrame {
         this.setVisible(true);
 
         JPanel southPanel = new JPanel(); //нижняя
-        southPanel.setBackground(Color.BLUE);
+        southPanel.setBackground(Color.lightGray);
         southPanel.setLayout(new GridBagLayout());
 
         messageBox = new JTextField("", 50);
@@ -170,8 +203,11 @@ public class ClientApp extends JFrame {
                 }
             }
         });
+
         messageBox.requestFocus();
-        sendButton = new JButton("Send =)");
+        sendButton = new JButton("Send");
+        sendButton.setIcon(new ImageIcon("D:\\idea projects\\chat\\src\\main\\java\\org\\study\\stasy\\images\\1457631818_send.png"));
+
         sendButton.addActionListener(new ClientApp.ButtonActionSendMsg());
         chatPane = new JTextPane();
         chatPane.setEditable(false);
@@ -204,13 +240,13 @@ public class ClientApp extends JFrame {
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                try {
-                    user.sendMsg(EXIT_MSG);
-                    getUserList().deleteUser(userName);
-                    user.shutDownClient();
-                    System.exit(0);
-                } catch (IOException | ClientException e1) {
-                    e1.printStackTrace();
+                //TODO IF (СЕРВЕР РАБОТАЕТ)
+                if (user != null) {
+                    try {
+                        user.sendMsg(EXIT_MSG);
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }); //закрытие окна через крестик
@@ -221,64 +257,31 @@ public class ClientApp extends JFrame {
 
     }
 
-    private void doConnection() {
-        if (loginButton.getText().equals("Connect")) {
-            sendButton.setEnabled(false);
-            flag = true;
-            loginButton.setText("Reset");
-            userName = loginField.getText();
-            host = hostField.getText();
-            port = portFiels.getText();
-            if (userName.length() < 1) {
-                JOptionPane.showMessageDialog(loginButton, "Please, Enter ur nickname",
-                        "Nick Name is invalid", JOptionPane.ERROR_MESSAGE);
-            }
-
-            try {
-                user = new Client(host, port, userName, this);
-
-            } catch (ClientException e1) {
-                log.error("", e1);
-                JOptionPane.showMessageDialog(loginButton, "Please, check host & port",
-                        "Connection i failed", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
-            try {
-                sendButton.setEnabled(true);
-                flag = false;
-                user.shutDownClient();
-
-            } catch (ClientException e) {
-                e.printStackTrace();
-            }
-            getUserList().deleteUser(userName);
-            loginButton.setText("Connect");
-        }
-
-    }
-
-    private JFrame error_frame; //фрейм вывода ошибок
 
     private void sendMsg() throws IOException, ClientException {
         if (loginButton.getText().equals("Connect")) {
-            JOptionPane.showMessageDialog(error_frame, "U r not connected to the server");
-        }
-        String text = messageBox.getText();
-        user.sendMsg(text);
-        ChatMessage userMsg = new ChatMessage(userName, text);
-        if (!Objects.equals(text, STOP_MSG)) {
-            printMytMsg(userMsg);
-            messageBox.setText("");
+            JOptionPane.showMessageDialog(new JFrame(), "U r not connected to the server");
         } else {
-            loginButton.setText("Connect");
-            user.shutDownClient();
-            JOptionPane.showMessageDialog(error_frame, "Bye bye!");
+            String text = messageBox.getText();
+            if (!Objects.equals(text, "")) {
+                user.sendMsg(text);
+
+                ChatMessage userMsg = new ChatMessage(userName, text);
+                if (!Objects.equals(text, EXIT_MSG)) {
+                    printMytMsg(userMsg);
+                    messageBox.setText("");
+                } else {
+                    loginButton.setText("Connect");
+                    user.shutDownClient();
+                    JOptionPane.showMessageDialog(new JFrame(), "Bye bye!");
+                }
+            }
         }
     }
 
     private void printMytMsg(ChatMessage userMsg) {
         chatPane.setText(String.format("%s\n%s [Я]: \t%s", chatPane.getText(),
-                LocalDateTime.now(),  userMsg.getMessage())); //todo мб есть что-то типо append(msg)
+                LocalDateTime.now(), userMsg.getMessage())); //todo мб есть что-то типо append(msg)
         chatPane.setCaretPosition(chatPane.getText().length());
     }
 
@@ -287,10 +290,10 @@ public class ClientApp extends JFrame {
      * вывод сообщения отправителя на экран
      * called from ButtonActionSendMsg and Client's private class "Listen to server"
      *
-     * @param message
+     * @param message сообщение, выводимое на экран пользователя с сервера
      */
     public void printReceivedMsg(ChatMessage message) {
-        if (message.getUserName() != userName) {
+        if (!Objects.equals(message.getUserName(), userName)) {
             chatPane.setText(String.format("%s\n%s [%s]: \t%s", chatPane.getText(),
                     LocalDateTime.now(), message.getUserName(), message.getMessage())); //todo мб есть что-то типо append(msg)
             chatPane.setCaretPosition(chatPane.getText().length());

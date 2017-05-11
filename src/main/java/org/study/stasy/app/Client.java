@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Objects;
 
 import org.study.stasy.ChatMessage;
 import org.study.stasy.ClientGUI.ClientApp;
@@ -21,12 +22,13 @@ public class Client {
     private String userName;
     private static final String HELLO_MSG = "#I'm fine";
     private ClientApp clientApp;
+    private ServerListener serverListener;
 
     public Client(String host, String port, String name, ClientApp app) throws ClientException {
 
-        log.info("Connection...");
         try {
 
+            log.info("Connection...");
 
             userName = name;
             fromServer = new Socket(host, Integer.parseInt(port));
@@ -35,7 +37,9 @@ public class Client {
             clientApp = app;
             getCtrlMsg();
             sendHelloMsg();
-            new ServerListener().start();
+            serverListener = new ServerListener();
+            serverListener.start();
+            log.info("Connected!");
 
         } catch (IOException e) {
             throw new ClientException("Client constructor: Socket error:");
@@ -54,7 +58,6 @@ public class Client {
     }
 
 
-
     private void getCtrlMsg() throws ClientException, IOException, ClassNotFoundException {
         ChatMessage fromServerCtrlMsg = (ChatMessage) objIn.readObject();
         log.info("ctrl msh is received: " + fromServerCtrlMsg.getMessage());
@@ -67,14 +70,12 @@ public class Client {
 
     //для GUI
     public void sendMsg(String msg) throws IOException {
-        ChatMessage chatMessage = new ChatMessage(userName, msg);
-        objOut.writeObject(chatMessage);
+        if (!Objects.equals(msg, "")) {
+            ChatMessage chatMessage = new ChatMessage(userName, msg);
+            objOut.writeObject(chatMessage);
+        }
     }
 
-
-    public ChatMessage recieveMsg() throws ClassNotFoundException, IOException {
-        return (ChatMessage) objIn.readObject();
-    }
 
     /**
      * While client has not sent  STOP_MSG he can send  clientMsg to Server
@@ -113,12 +114,11 @@ public class Client {
      */
     public void shutDownClient() throws ClientException {
         try {
+
             fromServer.shutdownInput();
             fromServer.shutdownOutput();
             fromServer.close();
 
-            objOut.close();
-            objIn.close();
 
         } catch (IOException e) {
             throw new ClientException("Client shutDownClient: socket error{}", e);
@@ -127,10 +127,6 @@ public class Client {
 
     public Object getOutputStream() {
         return objOut;
-    }
-
-    public Object getInputStream() {
-        return objIn;
     }
 
 
@@ -148,23 +144,28 @@ public class Client {
 
     class ServerListener extends Thread {
         public void run() {
-            while (true) {
-                try {
+            try {
+                while (true) {
                     ChatMessage msg = (ChatMessage) objIn.readObject();
                     if (clientApp == null) {
                         System.out.println(msg);
                     } else {
                         clientApp.printReceivedMsg(msg);
                     }
-                } catch ( IOException  e) {
-                    if (clientApp != null)
-                        clientApp.connectionFailed();
                 }
-                catch (ClassNotFoundException e2) {
+            } catch (IOException | ClassNotFoundException e) {
+                log.error("Server is unconnected");
+                if (clientApp != null) clientApp.connectionFailed();
+                try {
+                    clientApp.printReceivedMsg(new ChatMessage("I'M TIRED, SEE U LATER!"));
+
+                    shutDownClient();
+                } catch (ClientException e1) {
+                    e1.printStackTrace();
                 }
             }
         }
     }
-
-
 }
+
+

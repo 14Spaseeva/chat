@@ -39,15 +39,12 @@ public class Server {
 
     }
 
-    public synchronized static UserList getUserList() {
+    public synchronized static UserList serverUserList() {
 
             return userList;
 
     }
 
-    public static ChatHistory getChatHistory() {
-        return chatHistory;
-    }
 
     private void launch() {
         // shutdown-ловушка

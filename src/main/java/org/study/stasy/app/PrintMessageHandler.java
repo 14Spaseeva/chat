@@ -4,7 +4,7 @@ import org.study.stasy.ChatMessage;
 import org.study.stasy.netutils.MessageHandler;
 import org.study.stasy.netutils.Session;
 
-import static org.study.stasy.app.Server.getUserList;
+import static org.study.stasy.app.Server.serverUserList;
 
 
 public class PrintMessageHandler implements MessageHandler{
@@ -21,7 +21,7 @@ public class PrintMessageHandler implements MessageHandler{
 
     @Override
     public void handle(ChatMessage msg, Session session) {
-        session.broadcast(session, getUserList().getClientsList(), msg);
+        session.broadcast(session, serverUserList().getClientsList(), msg);
 
     }
 
