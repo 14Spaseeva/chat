@@ -7,6 +7,15 @@
         </encoder>
     </appender>
 
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>chat.log</file>
+        <encoder>
+            <pattern>
+                %date %-5level [%thread] %logger{128} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
