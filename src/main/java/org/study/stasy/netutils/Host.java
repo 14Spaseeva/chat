@@ -8,6 +8,7 @@ import org.study.stasy.concurrentutils.Stoppable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.ServerException;
 //Singleton
 
 public class Host implements Stoppable {
@@ -20,7 +21,7 @@ public class Host implements Stoppable {
     private Thread host;
 
     public Host(int portNumber, Channel<Stoppable> channel,
-                MessageHandlerFactory messageHandlerFactory) {
+                MessageHandlerFactory messageHandlerFactory) throws ServerException {
 
 
         this.status = true;
@@ -31,7 +32,7 @@ public class Host implements Stoppable {
         try {
             serverSocket = new ServerSocket(portNumber);
         } catch (IOException e) {
-            log.error("Oops! :{}", e);
+            throw new ServerException("Port is already in use");
         }
     }
 

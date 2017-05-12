@@ -36,14 +36,12 @@ public class ClientApp extends JFrame {
     private JTextField portFiels;
     private JTextField hostField;
     private static final String EXIT_MSG = "@exit";
-    private static String unckecked = "Unckecked";
-    private static String checked = "Checked";
-    private JMenuBar menuBar;
 
     private ClientApp() {
         try {
-
-            //   this.setIconImage(new ImageIcon("D:\\idea projects\\chat\\src\\main\\java\\org\\study\\stasy\\images\\1457631818_send.png"));
+            ImageIcon image = new ImageIcon(this.getClass().getResource("/1461249892_brain.png"));
+            this.setIconImage(image.getImage());
+            this.setTitle("Group Chat ");
             mainWindow();
         } catch (IOException | ClassNotFoundException e) {
             log.error("constructor error");
@@ -56,6 +54,7 @@ public class ClientApp extends JFrame {
      */
     public void connectionFailed() {
         loginButton.setText("Connect");
+        loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625583_connect.png")));
         checkBox.setSelected(false);
         checkBox.setEnabled(true);
         loginField.setEditable(true);
@@ -102,10 +101,15 @@ public class ClientApp extends JFrame {
                         "Nick Name is invalid", JOptionPane.ERROR_MESSAGE);
 
             } else {
+
                 checkBox.setEnabled(false);
                 checkBox.setSelected(false);
                 sendButton.setEnabled(true);
                 loginButton.setText("Reset");
+                chatPane.setText(String.format("%s\n%s [SYSTEM]: WAIT :) ", chatPane.getText(),
+                        LocalDateTime.now())); //todo мб есть что-то типо append(msg)
+                chatPane.setCaretPosition(chatPane.getText().length());
+                loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625590_disconnect.png")));
                 userName = loginField.getText();
                 loginField.setEditable(false);
                 host = hostField.getText();
@@ -114,9 +118,18 @@ public class ClientApp extends JFrame {
 
                 try {
                     user = new Client(host, port, userName, this);
-
+                    chatPane.setText(String.format("%s\n%s [SYSTEM]: WELCOME! :) ", chatPane.getText(),
+                            LocalDateTime.now())); //todo мб есть что-то типо append(msg)
                 } catch (ClientException e1) {
                     log.error("", e1);
+                    loginButton.setText("Connect");
+                    loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625583_connect.png")));
+                    checkBox.setSelected(false);
+                    checkBox.setEnabled(true);
+                    loginField.setEditable(true);
+                    sendButton.setEnabled(true);
+                    chatPane.setText(String.format("%s\n%s [SYSTEM]: TRY AGAIN :) ", chatPane.getText(),
+                            LocalDateTime.now())); //todo мб есть что-то типо append(msg)
                     JOptionPane.showMessageDialog(loginButton, "Please, check host & port",
                             "Connection i failed", JOptionPane.ERROR_MESSAGE);
                 }
@@ -141,6 +154,7 @@ public class ClientApp extends JFrame {
 
 
         loginButton = new JButton("Connect");
+        loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625583_connect.png")));
 
         loginButton.addActionListener(new loginButtonListener());
 
@@ -151,19 +165,7 @@ public class ClientApp extends JFrame {
 
         checkBox = new JCheckBox("Edit host/port", false);
         checkBox.setHorizontalTextPosition(SwingConstants.LEFT);
-  /*      checkBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (!checkBox.isSelected()) {
-                    portFiels.setEditable(true);
-                    hostField.setEditable(true);
-                } else {
-                    portFiels.setEditable(false);
-                    hostField.setEditable(false);
-                }
-            }
 
-        });*/
         checkBox.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
@@ -214,9 +216,9 @@ public class ClientApp extends JFrame {
         rootPanel = new JPanel();
         rootPanel.setLayout(new BorderLayout());
 
-        this.setSize(600, 300);
+        this.setSize(630, 300);
         this.setLocation(700, 400);
-
+        this.setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JPanel southPanel = new JPanel(); //нижняя
@@ -242,7 +244,8 @@ public class ClientApp extends JFrame {
 
         messageBox.requestFocus();
         sendButton = new JButton("Send");
-        sendButton.setIcon(new ImageIcon("D:\\idea projects\\chat\\src\\main\\java\\org\\study\\stasy\\images\\1457631818_send.png"));
+
+        sendButton.setIcon(new ImageIcon(this.getClass().getResource("/1457631818_send.png")));
 
         sendButton.addActionListener(new ClientApp.ButtonActionSendMsg());
         chatPane = new JTextPane();
@@ -282,6 +285,8 @@ public class ClientApp extends JFrame {
                     } catch (IOException e1) {
                         e1.printStackTrace();
                     }
+                } else {
+                    System.exit(0);
                 }
             }
         }); //закрытие окна через крестик
@@ -307,6 +312,8 @@ public class ClientApp extends JFrame {
                     messageBox.setText("");
                 } else {
                     loginButton.setText("Connect");
+                    loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625583_connect.png")));
+
                     user.shutDownClient();
                     JOptionPane.showMessageDialog(new JFrame(), "Bye bye!");
                 }

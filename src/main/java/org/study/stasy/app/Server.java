@@ -10,6 +10,8 @@ import org.study.stasy.Exeptions.TreadPoolException;
 import org.study.stasy.netutils.Host;
 import org.study.stasy.netutils.MessageHandlerFactory;
 
+import java.rmi.ServerException;
+
 
 public class Server {
     private static Logger log = LoggerFactory.getLogger(Server.class.getSimpleName());
@@ -25,7 +27,7 @@ public class Server {
     private static UserList userList;
     private static ChatHistory chatHistory;
 
-    private Server(String port, String maxSN, String className) {
+    public Server(String port, String maxSN, String className) {
         try {
             portNumber = Integer.parseInt(port);
             maxSessionNum = Integer.parseInt(maxSN);
@@ -46,7 +48,7 @@ public class Server {
     }
 
 
-    private void launch() {
+    public void launch() throws ServerException {
         // shutdown-ловушка
         MyShutdownHook shutdownHook = new MyShutdownHook();
         Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -62,7 +64,13 @@ public class Server {
 
     public static void main(String[] args) {
         Server server = new Server(args[0], args[1], args[2]);
-        server.launch();
+
+
+        try {
+            server.launch();
+        } catch (ServerException e) {
+            log.error("", e);
+        }
 
 
     }
@@ -74,7 +82,7 @@ public class Server {
 
     }
 
-    private void shutdown() {
+    public void shutdown() {
         try {
 
             log.info("Shutting down");
