@@ -36,6 +36,7 @@ public class ClientApp extends JFrame {
     private JTextField portFiels;
     private JTextField hostField;
     private static final String EXIT_MSG = "@exit";
+    private JTextField textField1;
 
     private ClientApp() {
         try {

@@ -15,12 +15,14 @@ import java.util.Map;
 /**
  * Created by ASPA on 04.05.2017.
  */
+
+//todo синхронизация,
 public class UserList {
     private Logger log = LoggerFactory.getLogger(UserList.class.getSimpleName());
 
     private Map<String, Client> onlineUsers = new HashMap<String, Client>();
 
-    public void addUser(String userName, Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
+   synchronized public void addUser(String userName, Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
         try {
             if (!this.onlineUsers.containsKey(userName)) {
                 this.onlineUsers.put(userName, new Client(socket, oos, ois));
@@ -40,12 +42,12 @@ public class UserList {
         }
     }
 
-    public void deleteUser(String login) {
+   synchronized public void deleteUser(String login) {
         this.onlineUsers.remove(login);
         log.info("user [{}] is deleted from userList", login);
     }
 
-    public ArrayList<Client> getClientsList() {
+  synchronized public ArrayList<Client> getClientsList() {
         ArrayList<Client> clientsList = new ArrayList<>(this.onlineUsers.entrySet().size());
         String s = "";
         for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) {
