@@ -159,7 +159,7 @@ public class Client {
                 if (clientApp != null) clientApp.connectionFailed();
                 try {
                     clientApp.printReceivedMsg(new ChatMessage("I'M TIRED, SEE U LATER!"));
-
+                    clientApp.connectionFailed();
                     shutDownClient();
                 } catch (ClientException e1) {
                     e1.printStackTrace();

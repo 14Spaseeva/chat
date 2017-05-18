@@ -2,6 +2,7 @@ package org.study.stasy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.study.stasy.Exeptions.UserListException;
 import org.study.stasy.app.Client;
 
 import java.io.ObjectInputStream;
@@ -22,32 +23,34 @@ public class UserList {
 
     private Map<String, Client> onlineUsers = new HashMap<String, Client>();
 
-   synchronized public void addUser(String userName, Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
+    synchronized public void addUser(String userName, Socket socket, ObjectOutputStream oos, ObjectInputStream ois) throws UserListException {
         try {
             if (!this.onlineUsers.containsKey(userName)) {
                 this.onlineUsers.put(userName, new Client(socket, oos, ois));
 
             } else {
                 int i = 1;
-                while (this.onlineUsers.containsKey(userName)) {
+               /* while (this.onlineUsers.containsKey(userName)) {
                     userName = userName + i;
                     i++;
-                }
-                this.onlineUsers.put(userName, new Client(socket, oos, ois));
-                log.info("[{}] is added", userName);
-
+                }*/
+                if (!this.onlineUsers.containsKey(userName)) {
+                    this.onlineUsers.put(userName, new Client(socket, oos, ois));
+                    log.info("[{}] is added", userName);
+                }else throw new UserListException("user with this name is already exists");
             }
+
         } catch (Exception e) {
             log.error("user can't be added to the userList");
         }
     }
 
-   synchronized public void deleteUser(String login) {
+    synchronized public void deleteUser(String login) {
         this.onlineUsers.remove(login);
         log.info("user [{}] is deleted from userList", login);
     }
 
-  synchronized public ArrayList<Client> getClientsList() {
+    public ArrayList<Client> getClientsList() {
         ArrayList<Client> clientsList = new ArrayList<>(this.onlineUsers.entrySet().size());
         String s = "";
         for (Map.Entry<String, Client> m : this.onlineUsers.entrySet()) {

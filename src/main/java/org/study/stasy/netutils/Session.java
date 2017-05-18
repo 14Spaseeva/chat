@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.study.stasy.ChatMessage;
 import org.study.stasy.Exeptions.SessionException;
+import org.study.stasy.Exeptions.UserListException;
 import org.study.stasy.app.Client;
 import org.study.stasy.concurrentutils.Stoppable;
 
@@ -34,6 +35,7 @@ public class Session implements Stoppable {
 
     private final Object lock = new Object();
     private String userName;
+    private String LOG_ERR_MSG = "User with this name already exists\nTry again :)";
 
     Session(Socket socket, MessageHandler messageHandler) {
 
@@ -54,8 +56,9 @@ public class Session implements Stoppable {
     @Override
     public void run() {
 
-        pingClient();
         try {
+            pingClient();
+
             String receivedMsg = "";
             while (!receivedMsg.equals(STOP_MSG)) {
                 ChatMessage chatMessage;
@@ -64,22 +67,28 @@ public class Session implements Stoppable {
                 log.info("[{}]", receivedMsg);
                 if (!receivedMsg.equals(STOP_MSG))
                     messageHandler.handle(chatMessage, this);
-                else broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] left chat room", userName)));;
+                else
+                    broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] left chat room", userName)));
             }
+            stop();
         } catch (IOException | ClassNotFoundException e) {
             log.error("error of readObject messages in Session.run()");
-        }
-        try {
-            stop();
+        } catch (UserListException e) {
+            try {
+                objOutForMyClient.writeObject(new ChatMessage(LOG_ERR_MSG));
+                closeSession();
+            } catch (IOException | SessionException e1) {
+                e1.printStackTrace();
+            }
         } catch (SessionException e) {
-            log.error("session can'r be stopped in Session.run()");
+            e.printStackTrace();
         }
 
 
     }
 
 
-    private void pingClient() {
+    private void pingClient() throws UserListException {
         try {
             ChatMessage ctrlMessage = new ChatMessage(CTRL_MSG);
             objOutForMyClient.writeObject(ctrlMessage);
@@ -91,9 +100,9 @@ public class Session implements Stoppable {
             if (!helloMsg.getMessage().equals(HELLO_MSG)) {
                 throw new SessionException("Wrong value: Hello_msg ");
             } else {
-                log.info("[{}] is connected", helloMsg.getUserName());
                 serverUserList().addUser(userName, fromClientSocket, objOutForMyClient, objIn);
                 broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] is connected", userName)));
+                log.info("[{}] is connected", helloMsg.getUserName());
             }
         } catch (IOException | ClassNotFoundException e) {
             log.error(" stream's error in ping client", e);
@@ -102,6 +111,7 @@ public class Session implements Stoppable {
         }
 
     }
+
 
     public void broadcast(Session session, ArrayList<Client> clientsArrayList, ChatMessage message) {
         try {
@@ -127,11 +137,13 @@ public class Session implements Stoppable {
     @Override
     public void stop() throws SessionException {
         serverUserList().deleteUser(userName);
+
         synchronized (lock) {
             if (fromClientSocket == null) {
                 //TODO подумать об этом
                 // if (fromClientSocket.isClosed()) throw new SessionException("Socket is closed ");
                 try {
+
                     objOutForMyClient.writeObject(new ChatMessage("Good bye, my dear!"));
                     assert fromClientSocket != null;
                     log.info("[{}] is disconnected", userName);
@@ -145,7 +157,6 @@ public class Session implements Stoppable {
                     objOutForMyClient.close();
                     log.info("Session with [{}] was stopped");
                     lock.notifyAll();
-
                 } catch (IOException e) {
                     throw new SessionException("Session stop(): threads error: {}", e);
                 }
@@ -153,5 +164,21 @@ public class Session implements Stoppable {
             }
         }
 
+    }
+
+    private void closeSession() throws SessionException {
+        try {
+            synchronized (lock) {
+                fromClientSocket.shutdownInput();
+                fromClientSocket.shutdownOutput();
+                fromClientSocket.close();
+                objIn.close();
+                objOutForMyClient.close();
+                log.info("Failed session was stopped");
+                lock.notifyAll();
+            }
+        } catch (IOException e) {
+            throw new SessionException("Session stop(): threads error: {}", e);
+        }
     }
 }
