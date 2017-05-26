@@ -116,8 +116,7 @@ public class ClientApp extends JFrame {
                 checkBox.setSelected(false);
                 sendButton.setEnabled(true);
                 loginButton.setText("Reset");
-                chatPane.setText(String.format("%s\n%s [SYSTEM]: WAIT :) ", chatPane.getText(),
-                        LocalDateTime.now())); //todo мб есть что-то типо append(msg)
+
                 chatPane.setCaretPosition(chatPane.getText().length());
                 loginButton.setIcon(new ImageIcon(this.getClass().getResource("/1457625590_disconnect.png")));
                 userName = loginField.getText();
@@ -125,11 +124,10 @@ public class ClientApp extends JFrame {
                 host = hostField.getText();
                 port = portFiels.getText();
 
-
                 try {
                     user = new Client(host, port, userName, this);
-                    chatPane.setText(String.format("%s\n%s [SYSTEM]: WELCOME! :) ", chatPane.getText(),
-                            LocalDateTime.now())); //todo мб есть что-то типо append(msg)
+                    /*chatPane.setText(String.format("%s\n%s [SYSTEM]: WELCOME! :) ", chatPane.getText(),
+                            LocalDateTime.now())); //todo мб есть что-то типо append(msg)*/
                 } catch (ClientException e1) {
                     log.error("", e1);
                     loginButton.setText("Connect");

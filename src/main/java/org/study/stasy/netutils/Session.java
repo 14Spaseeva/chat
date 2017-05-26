@@ -35,7 +35,7 @@ public class Session implements Stoppable {
 
     private final Object lock = new Object();
     private String userName;
-    private String LOG_ERR_MSG = "User with this name already exists\nTry again :)";
+    private String LOG_ERR_MSG = "User with this name already exists :)";
 
     Session(Socket socket, MessageHandler messageHandler) {
 
@@ -68,7 +68,7 @@ public class Session implements Stoppable {
                 if (!receivedMsg.equals(STOP_MSG))
                     messageHandler.handle(chatMessage, this);
                 else
-                    broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] left chat room", userName)));
+                    messageHandler.handle(new ChatMessage(String.format("[%s] left chat room", userName)), this);
             }
             stop();
         } catch (IOException | ClassNotFoundException e) {
@@ -101,7 +101,7 @@ public class Session implements Stoppable {
                 throw new SessionException("Wrong value: Hello_msg ");
             } else {
                 serverUserList().addUser(userName, fromClientSocket, objOutForMyClient, objIn);
-                broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[%s] is connected", userName)));
+                messageHandler.handle(new ChatMessage(String.format("[%s] is connected", userName)), this);
                 log.info("[{}] is connected", helloMsg.getUserName());
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -113,7 +113,7 @@ public class Session implements Stoppable {
     }
 
 
-    public void broadcast(Session session, ArrayList<Client> clientsArrayList, ChatMessage message) {
+    public void broadcast(ArrayList<Client> clientsArrayList, ChatMessage message) {
         try {
             ObjectOutputStream objOut;
 
@@ -125,7 +125,7 @@ public class Session implements Stoppable {
         } catch (SocketException e) {
             log.info("[{}] is disconnected", userName);
             serverUserList().deleteUser(userName);
-            this.broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
+            messageHandler.handle(new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)), this);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -148,8 +148,8 @@ public class Session implements Stoppable {
                     assert fromClientSocket != null;
                     log.info("[{}] is disconnected", userName);
                     serverUserList().deleteUser(userName);
-                    this.broadcast(this, serverUserList().getClientsList(), new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)));
-
+                    messageHandler.handle(new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)), this);
+                    // messageHandler(new ChatMessage(String.format("[System]\tuser [%s] has been disconnected", userName)), this);
                     fromClientSocket.shutdownInput();
                     fromClientSocket.shutdownOutput();
                     fromClientSocket.close();

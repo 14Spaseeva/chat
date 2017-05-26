@@ -21,9 +21,10 @@ public class PrintMessageHandler implements MessageHandler{
 
     @Override
     public void handle(ChatMessage msg, Session session) {
-        session.broadcast(session, serverUserList().getClientsList(), msg);
+        session.broadcast(serverUserList().getClientsList(), msg);
 
     }
+
 
 
 }

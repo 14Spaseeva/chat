@@ -29,6 +29,9 @@ public class Client {
         try {
 
             log.info("Connection...");
+            clientApp = app;
+            clientApp.printReceivedMsg(new ChatMessage("CONNECTION..."));
+
 
             userName = name;
             fromServer = new Socket(host, Integer.parseInt(port));
@@ -39,6 +42,7 @@ public class Client {
             sendHelloMsg();
             serverListener = new ServerListener();
             serverListener.start();
+
             log.info("Connected!");
 
         } catch (IOException e) {
@@ -118,7 +122,7 @@ public class Client {
             fromServer.shutdownInput();
             fromServer.shutdownOutput();
             fromServer.close();
-
+            serverListener.interrupt();
 
         } catch (IOException e) {
             throw new ClientException("Client shutDownClient: socket error{}", e);
@@ -158,7 +162,7 @@ public class Client {
                 log.error("Server is unconnected");
                 if (clientApp != null) clientApp.connectionFailed();
                 try {
-                    clientApp.printReceivedMsg(new ChatMessage("I'M TIRED, SEE U LATER!"));
+                    clientApp.printReceivedMsg(new ChatMessage("TRY TO CONNECT AGAIN!"));
                     clientApp.connectionFailed();
                     shutDownClient();
                 } catch (ClientException e1) {
